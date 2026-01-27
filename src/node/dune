@@ -1,0 +1,5 @@
+(library
+ (name node)
+ (public_name emu.node)
+ (libraries emu.instructions emu.vm)
+)

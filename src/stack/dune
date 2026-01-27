@@ -1,0 +1,4 @@
+(library
+ (name stack)
+ (public_name emu.stack)
+)

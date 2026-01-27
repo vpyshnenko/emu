@@ -1,0 +1,5 @@
+(library
+ (name builder)
+ (public_name emu.builder)
+ (libraries emu.net emu.node)
+)

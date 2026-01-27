@@ -1,0 +1,5 @@
+(library
+ (name net)
+ (public_name emu.net)
+ (libraries emu.node)
+)

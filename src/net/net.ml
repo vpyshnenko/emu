@@ -1,0 +1,140 @@
+(* net.ml *)
+module StringMap = Map.Make(String)
+
+module IntMap = Map.Make(Int)
+module IntPairMap = Map.Make(struct
+  type t = int * int
+  let compare = compare
+end)
+
+type t = {
+  nodes    : Node.t IntMap.t;                 (* node_id → node *)
+  routing  : (int * int) list IntPairMap.t;   (* (src_id, out_port) → (dst_id, in_port) list *)
+  next_id  : int;
+}
+
+(* ------------------------------------------------------------ *)
+(* Network creation                                             *)
+(* ------------------------------------------------------------ *)
+
+let create () =
+  (* God node: forwards any incoming payload to its only out-port *)
+  let god =
+    Node.create ~state:[] ~vm:Vm.empty ()
+  in
+
+  (* Add one outgoing port *)
+  let god, _ =
+    Node.add_out_port "god_out" god
+  in
+
+  let nodes = IntMap.singleton 0 god in
+  {
+    nodes;
+    next_id = 1;   (* user nodes start at 1 *)
+    routing = IntPairMap.empty;
+    (* optionally store god_in_port and god_out_port if Runtime needs them *)
+  }
+
+
+
+(* ------------------------------------------------------------ *)
+(* Node lookup                                                  *)
+(* ------------------------------------------------------------ *)
+
+let get_node net id =
+  match IntMap.find_opt id net.nodes with
+  | Some n -> n
+  | None ->
+      failwith (Printf.sprintf "net: node %d not found" id)
+
+(* ------------------------------------------------------------ *)
+(* Add a node                                                   *)
+(* ------------------------------------------------------------ *)
+
+let add_node node net =
+  let id = net.next_id in
+  let nodes = IntMap.add id node net.nodes in
+  ({ net with nodes; next_id = id + 1 }, id)
+  
+(* ------------------------------------------------------------ *)
+(* Connect nodes                                                *)
+(* ------------------------------------------------------------ *)
+type connection = {
+  from : int * int;
+  to_  : int * int;
+}
+
+
+let connect { from = (src_id, out_p); to_ = (dst_id, in_p) }  net =
+  let src_node = get_node net src_id in
+  let dst_node = get_node net dst_id in
+
+  if not (Node.has_out_port src_node out_p) then
+    failwith (Printf.sprintf "net: node %d has no outgoing port %d" src_id out_p);
+
+  if not (Node.has_in_port dst_node in_p) then
+    failwith (Printf.sprintf "net: node %d has no incoming port %d" dst_id in_p);
+
+  let old =
+    match IntPairMap.find_opt (src_id, out_p) net.routing with
+    | Some lst -> lst
+    | None -> []
+  in
+
+  let routing =
+    IntPairMap.add (src_id, out_p) ((dst_id, in_p) :: old) net.routing
+  in
+
+  { net with routing }
+
+
+(* ------------------------------------------------------------ *)
+(* Deliver an event to a single destination node                *)
+(* ------------------------------------------------------------ *)
+
+let deliver net dst_id in_port payload =
+  let dst_node = get_node net dst_id in
+
+  (* If node is halted, ignore event *)
+  if dst_node.halted then
+    (net, [])
+  else begin
+    (* Execute handler *)
+    let updated_node, outs =
+      Node.handle_event dst_node ~port:in_port ~payload
+    in
+
+    (* Update node in the network *)
+    let nodes = IntMap.add dst_id updated_node net.nodes in
+    let net = { net with nodes } in
+
+    (* If node just halted, remove all routing entries pointing to it *)
+    let net =
+      if updated_node.halted then
+        let routing =
+          IntPairMap.fold
+            (fun key lst acc ->
+               let filtered =
+                 List.filter (fun (dst, _) -> dst <> dst_id) lst
+               in
+               if filtered = [] then acc
+               else IntPairMap.add key filtered acc
+            )
+            net.routing
+            IntPairMap.empty
+        in
+        { net with routing }
+      else
+        net
+    in
+
+    (net, outs)
+  end
+
+
+
+let subscribers net src out_port =
+  match IntPairMap.find_opt (src, out_port) net.routing with
+  | Some lst -> lst
+  | None -> []

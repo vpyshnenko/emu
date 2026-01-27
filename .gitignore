@@ -1,36 +1,66 @@
-*.annot
+# ------------------------------------------------------------
+# Dune build artifacts
+# ------------------------------------------------------------
+_build/
+*.install
+*.merlin
 *.cmo
-*.cma
 *.cmi
-*.a
-*.o
 *.cmx
-*.cmxs
-*.cmxa
-
-# Files containing detailed information about the compilation (generated
-# by `ocamlc`/`ocamlopt` when invoked using the option `-bin-annot`).
-# These files are typically useful for code inspection tools
-# (e.g. Merlin).
 *.cmt
 *.cmti
+*.cmxa
+*.cmxs
+*.o
+*.a
 
-# ocamlbuild and Dune default working directory
-_build/
+# Dune sandboxing / promotion
+.dune
+.dune-config
+.dune-workspace
+.dune-workspace.dev
+*.dune-env
 
-# ocamlbuild targets
-*.byte
-*.native
-
-# oasis generated files
-setup.data
-setup.log
-
-# Merlin configuring file for Vim and Emacs
-.merlin
-
-# Dune generated files
-*.install
-
-# Local OPAM switch
+# ------------------------------------------------------------
+# Opam local switch / sandbox
+# ------------------------------------------------------------
+.opam/
 _opam/
+
+# ------------------------------------------------------------
+# Editor / IDE junk
+# ------------------------------------------------------------
+*.swp
+*.swo
+*~
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# VSCode
+.vscode/
+
+# Emacs
+.emacs.desktop
+.emacs.desktop.lock
+
+# JetBrains
+.idea/
+
+# ------------------------------------------------------------
+# OS-specific junk
+# ------------------------------------------------------------
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------------
+# Logs
+# ------------------------------------------------------------
+*.log
+
+# ------------------------------------------------------------
+# Local test output (if any)
+# ------------------------------------------------------------
+test-output/
+

@@ -1,0 +1,5 @@
+(library
+ (name snapshot)
+ (public_name emu.snapshot)
+ (libraries emu.net emu.queue )
+)

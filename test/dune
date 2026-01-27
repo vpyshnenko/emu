@@ -1,0 +1,53 @@
+(test
+ (name test_fib)
+ (libraries emu.runtime  ounit2)
+ (enabled_if false)
+ )
+ 
+ (test
+ (name test_fib_mod)
+ (libraries emu.runtime emu.builder ounit2)
+ ;(enabled_if false)
+ )
+ 
+(test
+ (name test_runtime)
+ (libraries emu.runtime  ounit2)
+ (enabled_if false)
+ )
+ 
+ (test
+ (name test_step)
+ (libraries emu.step emu.snapshot  ounit2)
+ (enabled_if false)
+ )
+
+(test
+ (name test_net)
+ (libraries emu.net  ounit2)
+ (enabled_if false)
+ )
+ 
+(test
+ (name test_vm)
+ (libraries emu.vm ounit2)
+ (enabled_if false)
+ )
+ 
+ (test
+ (name test_node)
+ (libraries emu.node)
+ (enabled_if false)
+ )
+
+(test
+ (name test_stack)
+ (libraries emu.stack ounit2))
+ 
+ (test
+ (name test_queue)
+ (libraries emu.queue ounit2))
+ 
+ (test
+ (name test_dlist)
+ (libraries emu.dlist ounit2))

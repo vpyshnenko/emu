@@ -1,0 +1,5 @@
+(library
+ (name runtime)
+ (public_name emu.runtime)
+ (libraries emu.digest emu.net emu.node emu.queue emu.step)
+)

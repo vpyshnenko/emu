@@ -1,0 +1,5 @@
+(executable
+ (name emu)
+ (public_name emu)
+ (modules emu)
+ (libraries emu.vm))

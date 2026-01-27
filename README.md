@@ -75,7 +75,7 @@ A node has:
 Connections define how events propagate.
 
 ### **4 — Learn the VM**  
-Instructions like `Load`, `Add`, `Emit`, `Halt`.
+Instructions like `Add`, `Emit`, `Halt`.
 
 ### **5 — Build your own network**  
 Try two nodes exchanging numbers.

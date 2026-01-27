@@ -273,11 +273,7 @@ let () = run_test_tt_main suite
 ```
 A Fibonacci sequence emerges from simple local rules and causal wiring.
 
-# 📦 Installation
-sh
-opam install emu
 # 🧪 Running the example
-sh
-dune exec test_fib_mod
+dune test
 # 📚 License
 MIT (or your license)

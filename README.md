@@ -14,9 +14,52 @@ The default transport is a shared FIFO queue — ideal for exploration, teaching
 
 ---
 
-## 🚧 Scope and Model
+# 🎯 Who Emu Is For
 
-Emu focuses on a clean, high‑level computational model:
+Emu is designed for developers, researchers, and system architects who want to validate **high‑level intent** rather than low‑level timing behavior.
+
+### ✔ Validate protocol logic and design intent  
+Emu helps uncover:
+- incorrect event routing  
+- unintended feedback loops  
+- missing or inconsistent state transitions  
+- logical contradictions in node behavior  
+
+### ✔ Analyze high‑level system structure  
+Emu makes it easy to see:
+- how data flows through the network  
+- which nodes activate and in what order  
+- what global behavior emerges from local rules  
+
+### ✔ Prototype architectural ideas before implementation  
+Emu lets you quickly:
+- sketch a topology  
+- define node behavior  
+- observe what the system *actually* does  
+
+### ✔ Focus on semantics, not physics  
+Emu **does not** model:
+- physical time  
+- parallel execution  
+- races, hazards, metastability  
+- delays, jitter, or hardware effects  
+
+This is intentional:  
+Emu reveals **semantic** issues, not **electrical** ones.
+
+### ✔ Explore emergent behavior  
+Global dynamics arise from:
+- local rules  
+- topology  
+- causal dependencies  
+
+Emu is ideal for studying such systems.
+
+---
+
+# 🚧 Model and Scope
+
+Emu implements a clean, high‑level computational model:
 
 - ✔ deterministic  
 - ✔ event‑driven  
@@ -28,7 +71,7 @@ Emu does **not** attempt to model:
 
 - ✘ physical timing  
 - ✘ concurrency or interleavings  
-- ✘ races, hazards, or metastability  
+- ✘ races, hazards, metastability  
 - ✘ nondeterministic transitions  
 
 This keeps Emu predictable, analyzable, and easy to reason about.
@@ -58,33 +101,6 @@ The node logic and VM remain unchanged.
 
 ---
 
-# 🎓 Educational Onboarding Path
-
-A recommended learning path:
-
-### **1 — Run your first network**  
-Start with the Fibonacci example below.
-
-### **2 — Understand what a Node is**  
-A node has:
-- local state  
-- handlers (VM programs)  
-- output ports  
-
-### **3 — Understand topology**  
-Connections define how events propagate.
-
-### **4 — Learn the VM**  
-Instructions like `Add`, `Emit`, `Halt`.
-
-### **5 — Build your own network**  
-Try two nodes exchanging numbers.
-
-### **6 — Explore emergent behavior**  
-Feedback loops, counters, pipelines, oscillations.
-
----
-
 # 🌀 Example: Fibonacci Modulo Network
 
 This example (from `test_fib_mod.ml`) builds a small FSM network that generates Fibonacci numbers modulo a ceiling.
@@ -98,7 +114,7 @@ Nodes A and B compute values; Node C forwards them and emits the sequence.
 
 ## 🧩 Example Description
 
-This network consists of three communicating finite‑state machines, each running on Emu’s internal stack‑based VM.
+The network consists of three communicating finite‑state machines, each running on Emu’s internal stack‑based VM.
 
 ### **NodeA and NodeB — stack‑machine modular summators**
 
@@ -124,17 +140,17 @@ Together, A and B form a causal loop that generates the Fibonacci sequence modul
 
 ### **NodeC — orchestrator and safety controller**
 
-NodeC is not a summator.  
+NodeC does not perform arithmetic.  
 It serves two roles:
 
 1. **Forwarding events**  
-   - Receives values from A → sends to B  
-   - Receives values from B → sends to A  
-   - Emits the resulting sequence on its `out` port  
+   - receives values from A → sends to B  
+   - receives values from B → sends to A  
+   - emits the resulting sequence on its `out` port  
 
 2. **Controlling execution**  
-   - Maintains an internal countdown  
-   - Halts the network if A or B emits an overflow event  
+   - maintains an internal countdown  
+   - halts the network if A or B emits an overflow event  
 
 NodeC is the traffic controller and safety valve of the system.
 

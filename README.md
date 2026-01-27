@@ -1,0 +1,2 @@
+# emu
+Network automata playground

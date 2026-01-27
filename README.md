@@ -1,135 +1,144 @@
 # 🐦 Emu  
-### *A network automata playground for asynchronous finite‑state machines*
+### *A playground for building networks of communicating finite‑state machines*
 
-Emu is a lightweight runtime for building, wiring, and running **networks of asynchronous finite‑state machines (AFSMs)**.  
+Emu is a lightweight runtime for constructing, wiring, and executing **networks of communicating finite‑state machines (FSMs)**.  
 It provides a simple, expressive way to:
 
-- define **local behavior** of tiny machines  
-- connect them into a **causal network**  
+- define **local behavior** of small programmable machines  
+- connect them into a **causal message‑passing network**  
 - run the system with **deterministic event‑driven execution**
 
 Emu is not a simulator.  
-Each node runs on a **real virtual machine**, and the message‑passing layer is **pluggable**.  
-The default transport is a shared FIFO queue — ideal for exploration and teaching.
+Each node runs on a **real stack‑based virtual machine**, and the message‑passing layer is **pluggable**.  
+The default transport is a shared FIFO queue — ideal for exploration, teaching, and prototyping.
 
 ---
 
-## 🚧 Scope: AFSMs Only
+## 🚧 Scope and Model
 
-Emu intentionally supports **only asynchronous finite‑state machines**:
+Emu focuses on a clean, high‑level computational model:
 
-- ✔ event‑driven  
 - ✔ deterministic  
-- ✔ finite state  
+- ✔ event‑driven  
+- ✔ finite‑state  
 - ✔ explicit topology  
-- ✔ causal execution  
+- ✔ causal dataflow  
 
-Emu does **not** support:
+Emu does **not** attempt to model:
 
-- ✘ synchronous automata  
-- ✘ timed automata  
-- ✘ nondeterministic transitions  
+- ✘ physical timing  
 - ✘ concurrency or interleavings  
+- ✘ races, hazards, or metastability  
+- ✘ nondeterministic transitions  
 
-This narrow focus keeps Emu simple, predictable, and easy to reason about.
+This keeps Emu predictable, analyzable, and easy to reason about.
 
 ---
 
 # 🏗️ Emu as a Real Runtime
 
-Each node in Emu contains a **real, deterministic virtual machine**:
+Each node in Emu contains a **deterministic stack‑based virtual machine**:
 
-- stack  
-- instruction set  
-- persistent state  
-- deterministic semantics  
+- a stack  
+- a small instruction set  
+- persistent local state  
+- strict, deterministic semantics  
 
-The VM is not simulated — it is an actual execution engine that can run anywhere.
+The VM is not simulated — it is an actual execution engine.
 
-The only replaceable part is the **transport layer**.  
-The default is a shared FIFO queue, but you can swap it for:
+The only replaceable component is the **transport layer**.  
+You can swap the default FIFO queue for:
 
 - a message bus  
 - a hardware interrupt system  
 - a distributed transport  
 - a custom scheduler  
 
-The node logic and VM stay the same.
+The node logic and VM remain unchanged.
 
 ---
 
 # 🎓 Educational Onboarding Path
 
-A recommended learning path for newcomers:
+A recommended learning path:
 
 ### **1 — Run your first network**  
-Use the Fibonacci example below.
+Start with the Fibonacci example below.
 
-### **2 — Learn what a Node is**  
+### **2 — Understand what a Node is**  
 A node has:
 - local state  
 - handlers (VM programs)  
 - output ports  
 
-### **3 — Learn how topology works**  
-Connections define how events flow.
+### **3 — Understand topology**  
+Connections define how events propagate.
 
-### **4 — Learn the VM basics**  
+### **4 — Learn the VM**  
 Instructions like `Load`, `Add`, `Emit`, `Halt`.
 
-### **5 — Build your own tiny network**  
-Start with two nodes sending numbers back and forth.
+### **5 — Build your own network**  
+Try two nodes exchanging numbers.
 
 ### **6 — Explore emergent behavior**  
-Feedback loops, oscillations, counters, pipelines.
+Feedback loops, counters, pipelines, oscillations.
 
 ---
 
 # 🌀 Example: Fibonacci Modulo Network
 
-This example (from `test_fib_mod.ml`) builds a small AFSM network that generates Fibonacci numbers modulo a ceiling. ![Fibonacci Network Diagram](docs/images/fib_net.png)
+This example (from `test_fib_mod.ml`) builds a small FSM network that generates Fibonacci numbers modulo a ceiling.
+
+![Fibonacci Network Diagram](docs/images/fib_net.png)  
 *Diagram: causal flow between nodes A, B, and C in the Fibonacci modulo network.*
+
 Nodes A and B compute values; Node C forwards them and emits the sequence.
+
+---
 
 ## 🧩 Example Description
 
-This network is built from three asynchronous finite‑state machines, each running on Emu’s internal stack‑based virtual machine.
+This network consists of three communicating finite‑state machines, each running on Emu’s internal stack‑based VM.
 
 ### **NodeA and NodeB — stack‑machine modular summators**
 
-NodeA and NodeB are **stack‑driven AFSMs** that compute Fibonacci values modulo a ceiling.  
-Each node maintains two internal state values:
+NodeA and NodeB are small programmable FSMs that compute Fibonacci values modulo a ceiling.  
+Each node maintains two pieces of local state:
 
 - the current Fibonacci number  
 - the modulo ceiling  
 
-When either node receives an event:
+When a node receives an event:
 
 1. The VM loads operands from the stack  
-2. Performs a modular addition (`AddMod`)  
-3. Checks whether the result overflowed the ceiling  
+2. Performs modular addition (`AddMod`)  
+3. Checks for overflow  
 4. Emits either:
-   - a **normal result** event, or  
+   - a **normal result**, or  
    - an **overflow** event  
 
-After computing the new value, each node **forwards the result to its neighbor** through NodeC.  
+After computing the new value, each node **sends the result to its neighbor** through NodeC.  
 Together, A and B form a causal loop that generates the Fibonacci sequence modulo `ceil`.
+
+---
 
 ### **NodeC — orchestrator and safety controller**
 
 NodeC is not a summator.  
-It acts as an **orchestrator** with two key responsibilities:
+It serves two roles:
 
 1. **Forwarding events**  
-   - Receives values from A and sends them to B  
-   - Receives values from B and sends them to A  
+   - Receives values from A → sends to B  
+   - Receives values from B → sends to A  
    - Emits the resulting sequence on its `out` port  
 
 2. **Controlling execution**  
-   - Maintains an internal countdown to limit the number of steps  
-   - Halts the entire network if either A or B emits an overflow event  
+   - Maintains an internal countdown  
+   - Halts the network if A or B emits an overflow event  
 
-NodeC is effectively the traffic controller and safety valve of the system.
+NodeC is the traffic controller and safety valve of the system.
+
+---
 
 ### **Starting the computation**
 

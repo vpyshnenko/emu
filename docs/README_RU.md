@@ -136,7 +136,7 @@ NodeC — это диспетчер и предохранитель сети.
 
 Пример из `test_fib_mod.ml` строит сеть AFSM, генерирующую числа Фибоначчи по модулю.
 
-![Fibonacci Network Diagram](docs/images/fib_net.png)  
+![Fibonacci Network Diagram](images/fib_net.png)  
 *Диаграмма: каузальный поток между узлами A, B и C в модульной сети Фибоначчи.*
 
 ```ocaml

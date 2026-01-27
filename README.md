@@ -87,7 +87,7 @@ Feedback loops, oscillations, counters, pipelines.
 
 # 🌀 Example: Fibonacci Modulo Network
 
-This example (from `test_fib_mod.ml`) builds a small AFSM network that generates Fibonacci numbers modulo a ceiling. ![Fibonacci Network Diagram](images/fib_net.png)
+This example (from `test_fib_mod.ml`) builds a small AFSM network that generates Fibonacci numbers modulo a ceiling. ![Fibonacci Network Diagram](docs/images/fib_net.png)
 *Diagram: causal flow between nodes A, B, and C in the Fibonacci modulo network.*
 Nodes A and B compute values; Node C forwards them and emits the sequence.
 

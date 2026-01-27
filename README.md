@@ -87,8 +87,55 @@ Feedback loops, oscillations, counters, pipelines.
 
 # 🌀 Example: Fibonacci Modulo Network
 
-This example (from `test_fib_mod.ml`) builds a small AFSM network that generates Fibonacci numbers modulo a ceiling.  
+This example (from `test_fib_mod.ml`) builds a small AFSM network that generates Fibonacci numbers modulo a ceiling. ![Fibonacci Network Diagram](docs/images/fib-net.png)
+*Diagram: causal flow between nodes A, B, and C in the Fibonacci modulo network.*
 Nodes A and B compute values; Node C forwards them and emits the sequence.
+
+## 🧩 Example Description
+
+This network is built from three asynchronous finite‑state machines, each running on Emu’s internal stack‑based virtual machine.
+
+### **NodeA and NodeB — stack‑machine modular summators**
+
+NodeA and NodeB are **stack‑driven AFSMs** that compute Fibonacci values modulo a ceiling.  
+Each node maintains two internal state values:
+
+- the current Fibonacci number  
+- the modulo ceiling  
+
+When either node receives an event:
+
+1. The VM loads operands from the stack  
+2. Performs a modular addition (`AddMod`)  
+3. Checks whether the result overflowed the ceiling  
+4. Emits either:
+   - a **normal result** event, or  
+   - an **overflow** event  
+
+After computing the new value, each node **forwards the result to its neighbor** through NodeC.  
+Together, A and B form a causal loop that generates the Fibonacci sequence modulo `ceil`.
+
+### **NodeC — orchestrator and safety controller**
+
+NodeC is not a summator.  
+It acts as an **orchestrator** with two key responsibilities:
+
+1. **Forwarding events**  
+   - Receives values from A and sends them to B  
+   - Receives values from B and sends them to A  
+   - Emits the resulting sequence on its `out` port  
+
+2. **Controlling execution**  
+   - Maintains an internal countdown to limit the number of steps  
+   - Halts the entire network if either A or B emits an overflow event  
+
+NodeC is effectively the traffic controller and safety valve of the system.
+
+### **Starting the computation**
+
+The entire network is activated by sending a **bang event** to **NodeB**, injecting the initial value `1`.  
+From that moment, the causal loop A → C → B → C → A produces the Fibonacci sequence modulo the ceiling.
+
 
 ```ocaml
 open OUnit2

@@ -215,20 +215,20 @@ let suite =
 
 let () = run_test_tt_main suite
 ```
-###Running this produces:
+### Running this produces:
 
 ```ocaml
 1 1 2 3 5 8 13
 ```
 A Fibonacci sequence emerges from simple local rules and causal wiring.
 
-#📦 Installation
+# 📦 Installation
 sh
 opam install emu
-#🧪 Running the example
+# 🧪 Running the example
 sh
 dune exec test_fib_mod
-#📚 License
+# 📚 License
 MIT (or your license)
 
 

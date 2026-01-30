@@ -10,52 +10,38 @@ open Stack
 type t = {
   stack_capacity : int;
   max_steps      : int;
+  mem_size       : int;
 }
 
 type control =
   | Continue
   | Halt
 
-let create ~stack_capacity ~max_steps =
-  { stack_capacity; max_steps }
+let create ~stack_capacity ~max_steps ~mem_size =
+  { stack_capacity; max_steps; mem_size }
 
-let empty = { stack_capacity = 0; max_steps = 0 }
-
-(* ------------------------------------------------------------ *)
-(* State <-> Stack conversion                                   *)
-(* ------------------------------------------------------------ *)
-
-let load_stack vm (s : State.t) : Stack.t =
-  List.fold_right
-    (fun v st -> Stack.push v st)
-    s
-    (Stack.create ~stack_capacity:vm.stack_capacity)
-
-let to_state (st : Stack.t) : State.t =
-  Stack.to_list st
+let empty = { stack_capacity = 0; max_steps = 0; mem_size = 0 }
 
 (* ------------------------------------------------------------ *)
 (* Pure semantics for normal instructions                       *)
 (* ------------------------------------------------------------ *)
 
-let eval_normal instr st emit =
+let eval_normal
+    (instr : instr)
+    (st : Stack.t)
+    ~(mem : int array)
+    ~(regA : int ref)
+    ~(emit : int -> unit)
+    ~(out_port_count : int)
+  : Stack.t =
   match instr with
+  (* --- Stack operations --- *)
   | Pop ->
       let _, st = pop st in
       st
 
-  | Emit ->
-      emit "default" (peek st);
-      st
-
-  | EmitTo name ->
-      emit name (peek st);
-      st
-
-  | EmitIfNonZero name ->
-      let v = peek st in
-      if v <> 0 then emit name v;
-      st
+  | PushConst n ->
+      push n st
 
   | Add ->
       let a, st = pop st in
@@ -72,27 +58,87 @@ let eval_normal instr st emit =
       else
         push 1 (push (sum - ceil) st)
 
-  | PushConst n ->
-      push n st
-
   | LogStack ->
       Printf.printf "Stack: [%s]\n"
         (String.concat "; "
            (List.map string_of_int (Stack.to_list st)));
       st
 
-  | _ ->
-      failwith "eval_normal: unexpected control instruction"
+  (* --- Accumulator A operations --- *)
+  | PushA ->
+      push !regA st
 
+  | PopA ->
+      let v, st = pop st in
+      regA := v;
+      st
+
+  | PeekA ->
+      regA := peek st;
+      st
+
+  (* --- Persistent memory (RAM) --- *)
+  | Load i ->
+      if i < 0 || i >= Array.length mem then
+        failwith "VM: Load index out of bounds"
+      else
+        push mem.(i) st
+
+  | Store i ->
+      if i < 0 || i >= Array.length mem then
+        failwith "VM: Store index out of bounds"
+      else
+        let v, st = pop st in
+        mem.(i) <- v;
+        st
+
+  (* --- Emission instructions (emit regA) --- *)
+  | Emit ->
+      let idx = peek st in
+      if idx < 0 || idx >= out_port_count then
+        failwith "VM: Emit index out of bounds"
+      else (
+        emit idx;
+        st
+      )
+
+  | EmitTo idx ->
+      if idx < 0 || idx >= out_port_count then
+        failwith "VM: EmitTo index out of bounds"
+      else (
+        emit idx;
+        st
+      )
+
+  | EmitIfNonZero idx ->
+      let cond = peek st in
+      if cond <> 0 then (
+        if idx < 0 || idx >= out_port_count then
+          failwith "VM: EmitIfNonZero index out of bounds"
+        else emit idx
+      );
+      st
+
+  (* --- Control instructions should not reach here --- *)
+  | Halt
+  | HaltIfEq _ ->
+      failwith "eval_normal: unexpected control instruction"
 
 (* ------------------------------------------------------------ *)
 (* Execute a single instruction                                 *)
 (* ------------------------------------------------------------ *)
 
-let exec_instr st instr : control * Stack.t * (string * int) list =
+let exec_instr
+    (st : Stack.t)
+    (instr : instr)
+    ~(mem : int array)
+    ~(regA : int ref)
+    ~(out_port_count : int)
+  : control * Stack.t * (int * int) list =
   let outs = ref [] in
-  let emit name v = outs := (name, v) :: !outs in
-
+  let emit idx =
+    outs := (idx, !regA) :: !outs
+  in
   match instr with
   (* --- Control instructions --- *)
   | Instructions.Halt ->
@@ -105,9 +151,10 @@ let exec_instr st instr : control * Stack.t * (string * int) list =
 
   (* --- Normal instructions --- *)
   | _ ->
-      let st' = eval_normal instr st emit in
+      let st' =
+        eval_normal instr st ~mem ~regA ~emit ~out_port_count
+      in
       (Continue, st', !outs)
-
 
 (* ------------------------------------------------------------ *)
 (* Execute a full program                                       *)
@@ -118,10 +165,19 @@ let exec_program
     (state : State.t)
     (code : instr list)
     (payload : int)
-  : State.t * (string * int) list * bool
+    ~(out_port_count : int)
+  : State.t * (int * int) list * bool
   =
-  let st = load_stack vm state in
-  let st = push payload st in
+  (* Convert node state list -> RAM array *)
+  let mem = Array.of_list state in
+  if Array.length mem <> vm.mem_size then
+    failwith "VM: state size does not match mem_size";
+
+  (* Register A starts with incoming payload *)
+  let regA = ref payload in
+
+  (* Operational stack starts empty *)
+  let st = Stack.create ~stack_capacity:vm.stack_capacity in
 
   let outputs = ref [] in
 
@@ -132,7 +188,9 @@ let exec_program
       (st, false)
     else
       let instr = List.nth code pc in
-      let (ctl, st', outs) = exec_instr st instr in
+      let (ctl, st', outs) =
+        exec_instr st instr ~mem ~regA ~out_port_count
+      in
       outputs := outs @ !outputs;
       match ctl with
       | Continue ->
@@ -141,5 +199,8 @@ let exec_program
           (st', true)
   in
 
-  let final_stack, halted = loop st 0 0 in
-  (to_state final_stack, !outputs, halted)
+  let _final_stack, halted = loop st 0 0 in
+
+  (* Pack RAM back into node state list *)
+  let final_state = Array.to_list mem in
+  (final_state, !outputs, halted)

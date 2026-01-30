@@ -25,7 +25,7 @@ let create () =
 
   (* Add one outgoing port *)
   let god, _ =
-    Node.add_out_port "god_out" god
+    Node.add_out_port god
   in
 
   let nodes = IntMap.singleton 0 god in

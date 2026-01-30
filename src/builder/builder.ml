@@ -5,30 +5,43 @@
 module NodeBuilder = struct
   type t = {
     add_handler  : Instructions.instr list -> int;
-    add_out_port : string -> int;
+    add_out_port : unit -> int;
     finalize     : unit -> Node.t;
   }
 
-  let create ~state ~vm =
-    let current = ref (Node.create ~state ~vm ()) in
-
+  let create ~state ~(vm:Vm.t) =
+    (* Ensure state is exactly vm.mem_size long *)
+    let padded_state =
+      let len = List.length state in
+      if len > vm.mem_size then
+        failwith "Builder.Node: initial state exceeds VM memory size";
+      if len = vm.mem_size then
+        state
+      else
+        (* pad with zeros *)
+        state @ (List.init (vm.mem_size - len) (fun _ -> 0))
+    in
+  
+    let current = ref (Node.create ~state:padded_state ~vm ()) in
+  
     let add_handler prog =
       let node', port_id = Node.add_handler prog !current in
       current := node';
       port_id
     in
-
-    let add_out_port alias =
-      let node', port_id = Node.add_out_port alias !current in
+  
+    let add_out_port () =
+      let node', actual_id = Node.add_out_port !current in
       current := node';
-      port_id
+      actual_id
     in
-
+  
     let finalize () =
       !current
     in
-
+  
     { add_handler; add_out_port; finalize }
+
 end
 
 

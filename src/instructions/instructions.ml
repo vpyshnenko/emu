@@ -7,13 +7,21 @@ type instr =
   | Add
   | AddMod
   | LogStack
+  
+  | PushA
+  | PopA
+  | PeekA
+  
+  | Load of int
+  | Store of int
+  
 
   (* Emission instructions *)
-  | Emit                     (* send head of stack to port 0 ("default") *)
-  | EmitTo of string         (* send head of stack to port aliased by label *)
+  | Emit                  (* send regA content to port defined by top of stack *)
+  | EmitTo of int         (* send regA content to port by index *)
 
   (* Conditional emission *)
-  | EmitIfNonZero of string  (* same, but only if top-of-stack ≠ 0 *)
+  | EmitIfNonZero of int  (* same, but only if top-of-stack ≠ 0 *)
 
   (* Control flow *)
   | Halt

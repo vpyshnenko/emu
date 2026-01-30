@@ -2,8 +2,7 @@
 
 open Instructions
 
-module StringMap = Map.Make(String)
-module IntMap    = Map.Make(Int)
+module IntMap = Map.Make(Int)
 
 type t = {
   state          : State.t;
@@ -12,14 +11,14 @@ type t = {
   (* incoming port → handler code *)
   handlers       : instr list IntMap.t;
 
-  (* outgoing stream alias → port number *)
-  outgoing_ports : int StringMap.t;
+  (* outgoing ports: list of actual port IDs *)
+  out_ports      : int list;
 
-  (* next free incoming port *)
+  (* next actual port ID to assign *)
+  next_port_id   : int;
+
+  (* next free incoming port index *)
   next_in_port   : int;
-
-  (* next free outgoing port *)
-  next_out_port  : int;
 
   (* node-level halting flag *)
   halted         : bool;
@@ -29,14 +28,14 @@ type t = {
 (* Node creation                                                *)
 (* ------------------------------------------------------------ *)
 
-let empty = { 
+let empty = {
   vm = Vm.empty;
   state = [];
   handlers = IntMap.empty;
-  outgoing_ports = StringMap.empty;
-  next_in_port   = 0;
-  next_out_port  = 0;
-  halted         = false;
+  out_ports = [];
+  next_port_id = 0;
+  next_in_port = 0;
+  halted = false;
 }
 
 let create ?state ~vm () =
@@ -44,36 +43,30 @@ let create ?state ~vm () =
     state          = Option.value ~default:[] state;
     vm;
     handlers       = IntMap.empty;
-    outgoing_ports = StringMap.empty;
+    out_ports      = [];
+    next_port_id   = 0;
     next_in_port   = 0;
-    next_out_port  = 0;
     halted         = false;
   }
 
 (* ------------------------------------------------------------ *)
-(* Outgoing streams                                             *)
+(* Outgoing ports                                               *)
 (* ------------------------------------------------------------ *)
 
-let add_out_port alias node =
-  if StringMap.mem alias node.outgoing_ports then
-    failwith
-      (Printf.sprintf "node: outgoing stream '%s' already exists" alias);
-
-  let port = node.next_out_port in
-  let outgoing_ports =
-    StringMap.add alias port node.outgoing_ports
-  in
+(* Adds a new outgoing port, returns symbolic index *)
+let add_out_port node =
+  let actual_id = node.next_port_id in
   let node' =
     { node with
-        outgoing_ports;
-        next_out_port = port + 1;
+        out_ports = node.out_ports @ [actual_id];
+        next_port_id = actual_id + 1;
     }
   in
-  (node', port)
-  
-let has_out_port node p =
-  (* outgoing_ports : alias → port_id *)
-  StringMap.exists (fun _alias port_id -> port_id = p) node.outgoing_ports
+  (node', actual_id)
+
+
+let has_out_port node idx =
+  idx >= 0 && idx < List.length node.out_ports
 
 (* ------------------------------------------------------------ *)
 (* Handlers and incoming ports                                  *)
@@ -81,11 +74,7 @@ let has_out_port node p =
 
 let add_handler code node =
   let port = node.next_in_port in
-
-  let handlers =
-    IntMap.add port code node.handlers
-  in
-
+  let handlers = IntMap.add port code node.handlers in
   let node' =
     { node with
         handlers;
@@ -93,12 +82,9 @@ let add_handler code node =
     }
   in
   (node', port)
-  
+
 let has_in_port node p =
   IntMap.mem p node.handlers
-
-
-
 
 (* ------------------------------------------------------------ *)
 (* Event dispatch                                               *)
@@ -108,7 +94,7 @@ let handle_event node ~port ~payload =
   if node.halted then
     (node, [])
   else
-    (* 1. Lookup handler code directly by numeric port *)
+    (* 1. Lookup handler code *)
     let code =
       match IntMap.find_opt port node.handlers with
       | Some c -> c
@@ -119,20 +105,28 @@ let handle_event node ~port ~payload =
     in
 
     (* 2. Execute handler *)
+    let out_port_count = List.length node.out_ports in
     let new_state, outs, halted =
-      Vm.exec_program node.vm node.state code payload
+      Vm.exec_program
+        node.vm
+        node.state
+        code
+        payload
+        ~out_port_count
     in
 
-    (* 3. Translate outgoing aliases → numeric port IDs *)
+    (* 3. Map symbolic indices → actual port IDs *)
+    let out_ports_array = Array.of_list node.out_ports in
+
     let translated_outs =
       List.map
-        (fun (alias, v) ->
-           match StringMap.find_opt alias node.outgoing_ports with
-           | Some out_port -> (out_port, v)
-           | None ->
-               failwith
-                 (Printf.sprintf
-                    "node: handler emitted to unknown stream alias '%s'" alias)
+        (fun (sym_idx, v) ->
+           if sym_idx < 0 || sym_idx >= Array.length out_ports_array then
+             failwith
+               (Printf.sprintf
+                  "node: handler emitted invalid port index %d" sym_idx);
+           let actual_id = out_ports_array.(sym_idx) in
+           (actual_id, v)
         )
         outs
     in

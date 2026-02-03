@@ -14,6 +14,7 @@ type instr =
   
   | Load of int
   | Store of int
+  | LoadMeta of int
   
 
   (* Emission instructions *)

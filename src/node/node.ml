@@ -5,23 +5,14 @@ open Instructions
 module IntMap = Map.Make(Int)
 
 type t = {
-  state          : State.t;
-  vm             : Vm.t;
+  id        : int;                     (* stable node identity *)
+  state     : State.t;                 (* immutable persistent user state *)
+  vm        : Vm.t;
 
-  (* incoming port → handler code *)
-  handlers       : instr list IntMap.t;
+  handlers  : instr list IntMap.t;     (* incoming port index → handler code *)
+  out_ports : int list;                (* outgoing ports: actual IDs *)
 
-  (* outgoing ports: list of actual port IDs *)
-  out_ports      : int list;
-
-  (* next actual port ID to assign *)
-  next_port_id   : int;
-
-  (* next free incoming port index *)
-  next_in_port   : int;
-
-  (* node-level halting flag *)
-  halted         : bool;
+  halted    : bool;
 }
 
 (* ------------------------------------------------------------ *)
@@ -29,59 +20,37 @@ type t = {
 (* ------------------------------------------------------------ *)
 
 let empty = {
+  id = -1;
   vm = Vm.empty;
   state = [];
   handlers = IntMap.empty;
   out_ports = [];
-  next_port_id = 0;
-  next_in_port = 0;
   halted = false;
 }
 
-let create ?state ~vm () =
+let create ~id ~state ~vm ~handlers ~out_ports () =
   {
-    state          = Option.value ~default:[] state;
+    id;
+    state;
     vm;
-    handlers       = IntMap.empty;
-    out_ports      = [];
-    next_port_id   = 0;
-    next_in_port   = 0;
-    halted         = false;
+    handlers;
+    out_ports;
+    halted = false;
   }
 
 (* ------------------------------------------------------------ *)
-(* Outgoing ports                                               *)
+(* Builder-supplied port registration                           *)
 (* ------------------------------------------------------------ *)
 
-(* Adds a new outgoing port, returns symbolic index *)
-let add_out_port node =
-  let actual_id = node.next_port_id in
-  let node' =
-    { node with
-        out_ports = node.out_ports @ [actual_id];
-        next_port_id = actual_id + 1;
-    }
-  in
-  (node', actual_id)
+let add_out_port ~actual_id node =
+  { node with out_ports = node.out_ports @ [actual_id] }
 
+let add_handler ~in_port ~code node =
+  { node with handlers = IntMap.add in_port code node.handlers }
 
-let has_out_port node idx =
-  idx >= 0 && idx < List.length node.out_ports
-
-(* ------------------------------------------------------------ *)
-(* Handlers and incoming ports                                  *)
-(* ------------------------------------------------------------ *)
-
-let add_handler code node =
-  let port = node.next_in_port in
-  let handlers = IntMap.add port code node.handlers in
-  let node' =
-    { node with
-        handlers;
-        next_in_port = port + 1;
-    }
-  in
-  (node', port)
+(* Now we check by *value*, not by index *)
+let has_out_port node port_id =
+  List.exists (fun id -> id = port_id) node.out_ports
 
 let has_in_port node p =
   IntMap.mem p node.handlers
@@ -94,7 +63,6 @@ let handle_event node ~port ~payload =
   if node.halted then
     (node, [])
   else
-    (* 1. Lookup handler code *)
     let code =
       match IntMap.find_opt port node.handlers with
       | Some c -> c
@@ -104,18 +72,25 @@ let handle_event node ~port ~payload =
                "node: no handler mapped to incoming port %d" port)
     in
 
-    (* 2. Execute handler *)
+    let meta_info =
+      [
+        node.id;
+        List.length node.out_ports;
+        IntMap.cardinal node.handlers;
+      ]
+    in
+
     let out_port_count = List.length node.out_ports in
     let new_state, outs, halted =
       Vm.exec_program
-        node.vm
+	    node.vm
         node.state
+        meta_info
         code
         payload
-        ~out_port_count
+        out_port_count
     in
 
-    (* 3. Map symbolic indices → actual port IDs *)
     let out_ports_array = Array.of_list node.out_ports in
 
     let translated_outs =

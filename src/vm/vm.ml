@@ -30,6 +30,7 @@ let eval_normal
     (instr : instr)
     (st : Stack.t)
     ~(mem : int array)
+    ~(meta_mem : int array)
     ~(regA : int ref)
     ~(emit : int -> unit)
     ~(out_port_count : int)
@@ -92,6 +93,13 @@ let eval_normal
         mem.(i) <- v;
         st
 
+  (* --- Metadata memory (meta_mem) --- *)
+  | LoadMeta i ->
+      if i < 0 || i >= Array.length meta_mem then
+        failwith "VM: LoadMeta index out of bounds"
+      else
+        push meta_mem.(i) st
+
   (* --- Emission instructions (emit regA) --- *)
   | Emit ->
       let idx = peek st in
@@ -132,6 +140,7 @@ let exec_instr
     (st : Stack.t)
     (instr : instr)
     ~(mem : int array)
+    ~(meta_mem : int array)
     ~(regA : int ref)
     ~(out_port_count : int)
   : control * Stack.t * (int * int) list =
@@ -152,7 +161,7 @@ let exec_instr
   (* --- Normal instructions --- *)
   | _ ->
       let st' =
-        eval_normal instr st ~mem ~regA ~emit ~out_port_count
+        eval_normal instr st ~mem ~meta_mem ~regA ~emit ~out_port_count
       in
       (Continue, st', !outs)
 
@@ -163,15 +172,24 @@ let exec_instr
 let exec_program
     (vm : t)
     (state : State.t)
+    (meta_info : int list)
     (code : instr list)
     (payload : int)
-    ~(out_port_count : int)
+    (out_port_count : int)
   : State.t * (int * int) list * bool
   =
-  (* Convert node state list -> RAM array *)
-  let mem = Array.of_list state in
-  if Array.length mem <> vm.mem_size then
-    failwith "VM: state size does not match mem_size";
+  (* Convert node state list -> RAM array, padding if needed *)
+  let mem =
+    let len = List.length state in
+    if len > vm.mem_size then
+      failwith "VM: state exceeds memory size";
+    Array.init vm.mem_size (fun i ->
+      if i < len then List.nth state i else 0
+    )
+  in
+
+  (* Convert meta_info list -> meta_mem array *)
+  let meta_mem = Array.of_list meta_info in
 
   (* Register A starts with incoming payload *)
   let regA = ref payload in
@@ -189,7 +207,7 @@ let exec_program
     else
       let instr = List.nth code pc in
       let (ctl, st', outs) =
-        exec_instr st instr ~mem ~regA ~out_port_count
+        exec_instr st instr ~mem ~meta_mem ~regA ~out_port_count
       in
       outputs := outs @ !outputs;
       match ctl with

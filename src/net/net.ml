@@ -16,19 +16,8 @@ type t = {
 (* ------------------------------------------------------------ *)
 
 let create () =
-  (* God node: forwards any incoming payload to its only out-port *)
-  let god =
-    Node.create
-      ~id:0
-      ~state:[]
-      ~vm:Vm.empty
-      ~handlers:IntMap.empty
-      ~out_ports:[0]     (* one outgoing port with actual id = 0 *)
-      ()
-  in
-
   {
-    nodes   = IntMap.singleton 0 god;
+    nodes   = IntMap.empty;
     routing = IntPairMap.empty;
   }
 

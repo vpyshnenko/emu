@@ -114,22 +114,26 @@ let test_fibonacci_mod_network _ctx =
   (* ------------------------------------------------------------ *)
   (* Run simulation                                               *)
   (* ------------------------------------------------------------ *)
-  let init_snap = Runtime.create ~lifespan:30 net in
 
-  let digest =
-    Runtime.run
-      ~bang:{ dst = idB; in_port_id = inB; payload = 1 }
-      init_snap
-  in
+let init_snap = Runtime.create ~lifespan:30 net in
 
-  let res_stream =
-    Digest.node_out_stream_on_port ~node_id:idC ~out_port:outC digest
-  in
-  
-  Printf.printf "Total steps: %d\n" (Digest.total_steps digest.history);
-  Printf.printf "NodeC emitted values: %s\n" (pp_list res_stream);
-  
-  assert_equal [1; 1; 2; 3; 5; 8; 13] res_stream
+(* One avalanche triggered by sending payload=1 to node B *)
+let schedule = [
+  { Runtime.src = idC; out_port = outC_ch1; payload = 1 };
+] in
+
+let digest =
+  Runtime.run ~schedule init_snap
+in
+
+let res_stream =
+  Digest.node_out_stream_on_port ~node_id:idC ~out_port:outC digest
+in
+
+Printf.printf "Total steps: %d\n" (Digest.total_steps digest.history);
+Printf.printf "NodeC emitted values: %s\n" (pp_list res_stream);
+
+assert_equal [1; 1; 2; 3; 5; 8; 13] res_stream
   
 
 (* ------------------------------------------------------------ *)

@@ -11,6 +11,12 @@
  )
  
 (test
+ (name test_chess_clock)
+ (libraries emu.runtime emu.builder ounit2)
+ ;(enabled_if false)
+ )
+ 
+(test
  (name test_runtime)
  (libraries emu.runtime  ounit2)
  (enabled_if false)

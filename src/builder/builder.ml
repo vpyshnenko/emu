@@ -15,8 +15,8 @@ module NodeBuilder = struct
 
   let create ~state ~(vm : Vm.t) =
     (* Builder state captured in closures *)
-    let next_in_port  = ref 1 in
-    let next_out_port = ref 1 in
+    let next_in_port  = ref 0 in
+    let next_out_port = ref 0 in
     let handlers      = ref [] in
     let out_ports     = ref [] in
 

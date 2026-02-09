@@ -89,7 +89,7 @@ let eval_normal
       if i < 0 || i >= Array.length mem then
         failwith "VM: Store index out of bounds"
       else
-        let v, st = pop st in
+        let v = peek st in
         mem.(i) <- v;
         st
 

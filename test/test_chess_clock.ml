@@ -1,8 +1,9 @@
 open OUnit2
 open Instructions
+open Snapshot
 
 let make_vm () =
-  Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:2
+  Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:1
 
 let pp_list lst =
   "[" ^ (String.concat "; " (List.map string_of_int lst)) ^ "]"
@@ -35,7 +36,7 @@ let test_chess_clock _ctx =
   (* 0: curent active out port index                              *)
   (* 1: out ports count (ceil)                                    *)
   (* ------------------------------------------------------------ *)
-  let bRouter = Builder.Node.create ~state:[0; 2] ~vm in
+  let bRouter = Builder.Node.create ~state:[0] ~vm in
 
   (* Incoming ports: 1 = tick, 2 = switch pulse *)
   let inTick =
@@ -47,7 +48,7 @@ let test_chess_clock _ctx =
 
   let inPulse =
     bRouter.add_handler [
-      Load 1; (* push ceil *)
+      LoadMeta 1; (* push ceil *)
 	  Load 0; (* push current active out port index *)
       PushConst 1;
       AddMod;
@@ -63,7 +64,7 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   (* Node: counterA                                               *)
   (* ------------------------------------------------------------ *)
-  let bA = Builder.Node.create ~state:[10] ~vm in
+  let bA = Builder.Node.create ~state:[5] ~vm in
 
   let inA =
     bA.add_handler [
@@ -82,7 +83,7 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   (* Node: counterB                                               *)
   (* ------------------------------------------------------------ *)
-  let bB = Builder.Node.create ~state:[10] ~vm in
+  let bB = Builder.Node.create ~state:[5] ~vm in
 
   let inB =
     bB.add_handler [
@@ -132,13 +133,30 @@ let test_chess_clock _ctx =
     { Runtime.src = idGen; out_port = outGen; payload = 1 };
     { Runtime.src = idSw;  out_port = outSw;  payload = 1 }; (* switch to A *)
     { Runtime.src = idGen; out_port = outGen; payload = 1 };
+    { Runtime.src = idGen; out_port = outGen; payload = 1 };
+    { Runtime.src = idGen; out_port = outGen; payload = 1 };
+    { Runtime.src = idGen; out_port = outGen; payload = 1 };
   ] in
 
   (* ------------------------------------------------------------ *)
   (* Run simulation                                               *)
   (* ------------------------------------------------------------ *)
   let init_snap = Runtime.create ~lifespan:100 net in
-  let digest = Runtime.run ~schedule init_snap in
+  
+  let stop_when snap =
+    let a = Net.get_node snap.net idA in
+    let b = Net.get_node snap.net idB in
+    let a_count = List.hd a.state in
+    let b_count = List.hd b.state in
+    a_count <= 0 || b_count <= 0
+  in
+  
+  let digest =
+    Runtime.run
+      ~stop_when
+      ~schedule
+      init_snap
+  in
 
   let streamA =
     Digest.node_out_stream_on_port ~node_id:idA ~out_port:outA_count digest
@@ -159,8 +177,8 @@ let test_chess_clock _ctx =
      - Last tick goes to A
   *)
 
-  assert_equal [9; 8; 7] streamA;
-  assert_equal [9; 8] streamB
+  assert_equal [4; 3; 2; 1; 0] streamA;
+  assert_equal [4; 3] streamB
 
 (* ------------------------------------------------------------ *)
 

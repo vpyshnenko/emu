@@ -103,17 +103,25 @@ let rec run_avalanche snap history =
 (* Run a sequence of avalanches                                  *)
 (* ------------------------------------------------------------- *)
 
-let rec run_avalanches snap history = function
+let rec run_avalanches ?stop_when snap history = function
   | [] ->
       Digest.make ~initial_snapshot:snap ~history
   | ev :: rest ->
       let snap = enqueue ev snap in
       let snap, history = run_avalanche snap history in
-      run_avalanches snap history rest
+
+      (* NEW: termination check *)
+      match stop_when with
+      | Some f when f snap ->
+          Digest.make ~initial_snapshot:snap ~history
+      | _ ->
+          run_avalanches ?stop_when snap history rest
+
 
 (* ------------------------------------------------------------- *)
 (* Public API                                                    *)
 (* ------------------------------------------------------------- *)
 
-let run ~schedule initial_snapshot =
-  run_avalanches initial_snapshot [] schedule
+let run ?stop_when ~schedule initial_snapshot =
+  run_avalanches ?stop_when initial_snapshot [] schedule
+

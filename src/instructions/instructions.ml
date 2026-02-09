@@ -14,7 +14,7 @@ type instr =
   
   | Load of int
   | Store of int
-  | LoadMeta of int
+  | LoadMeta of Meta.index
   
 
   (* Emission instructions *)

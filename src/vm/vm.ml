@@ -94,7 +94,8 @@ let eval_normal
         st
 
   (* --- Metadata memory (meta_mem) --- *)
-  | LoadMeta i ->
+  | LoadMeta meta ->
+    let i = Meta.to_int meta in
       if i < 0 || i >= Array.length meta_mem then
         failwith "VM: LoadMeta index out of bounds"
       else

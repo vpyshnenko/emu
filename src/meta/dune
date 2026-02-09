@@ -1,0 +1,4 @@
+(library
+ (name meta)
+ (public_name emu.meta)
+)

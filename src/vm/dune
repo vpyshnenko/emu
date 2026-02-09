@@ -1,5 +1,5 @@
 (library
  (name vm)
  (public_name emu.vm)
- (libraries emu.instructions emu.stack emu.state)
+ (libraries emu.instructions emu.stack emu.state emu.meta)
 )

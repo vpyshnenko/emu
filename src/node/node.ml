@@ -73,11 +73,11 @@ let handle_event node ~port ~payload =
     in
 
     let meta_info =
-      [
-        node.id;
-        List.length node.out_ports;
-        IntMap.cardinal node.handlers;
-      ]
+      Meta.build
+        ~node_id:node.id
+        ~out_port_count:(List.length node.out_ports)
+        ~in_port_count:(IntMap.cardinal node.handlers)
+
     in
 
     let out_port_count = List.length node.out_ports in

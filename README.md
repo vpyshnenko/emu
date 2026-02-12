@@ -14,11 +14,11 @@ System design often mixes core logic with concurrency and timing concerns. Emu s
 
 Because execution is deterministic and fully reproducible, behavior can be tested, inspected, and debugged step by step. This makes it easier to uncover design flaws — such as incorrect event routing, unintended feedback loops, missing or inconsistent state transitions, or logical contradictions in node behavior — before those structural issues are obscured by timing and concurrency complexity.
 
-## Usage
+# Usage
 
 Using Emu typically follows four steps:
 
-### 1. Define node behavior
+## 1. Define node behavior
 
 Each node runs a small deterministic program on a stack-based virtual machine (VM).  
 Handlers describe how the node reacts when a value arrives on a specific input port.
@@ -34,7 +34,7 @@ Node programs are intentionally small and focused — they should react quickly 
 
 ---
 
-### 2. Define node state
+## 2. Define node state
 
 Each node has persistent local state, represented as a list of integers.
 
@@ -48,7 +48,7 @@ This keeps logic local and explicit.
 
 ---
 
-### 3. Connect nodes through topology
+## 3. Connect nodes through topology
 
 Nodes are connected into a **statically wired, event-driven network**.
 
@@ -62,7 +62,7 @@ All communication is explicit and defined by the topology.
 
 ---
 
-### 4. Execute the system
+## 4. Execute the system
 
 The engine evaluates the network by processing events one by one.
 
@@ -81,7 +81,7 @@ The full execution history can be inspected afterward for analysis and debugging
 
 ---
 
-## Core Concepts (Recap)
+# Core Concepts (Recap)
 
 Under the hood, Emu consists of four composable parts:
 

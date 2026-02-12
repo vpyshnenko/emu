@@ -22,7 +22,7 @@ Concepts in distributed systems, asynchronous computation, and event-driven arch
 - **Deployment is expensive and distracting**  
   Clusters, containers, networks, and configuration consume attention.
 
-- **The behavior is emergent**  
+- **Behavior is emergent**  
   Students struggle to understand how local rules produce global effects.
 
 As a result, learners often memorize terminology without developing intuition.
@@ -37,7 +37,7 @@ Emu turns abstract ideas into concrete experiments.
 
 Students can construct small networks of communicating state machines and observe how behavior unfolds step by step.
 
-Using simple AFSM (asynchronous finite-state machine) networks, students can explore phenomena such as:
+Using simple networks of interacting nodes, students can explore phenomena such as:
 
 - overflow propagation  
 - synchronization slips  
@@ -62,9 +62,9 @@ But in Emu, they are:
 - small  
 - safe  
 - deterministic  
-- inspectable  
+- fully inspectable  
 
-Students can “play” with dynamic behavior in a controlled environment.
+Students can experiment with dynamic behavior in a controlled environment.
 
 ---
 
@@ -100,11 +100,11 @@ Instead of reading about causal ordering, students can *watch it happen*.
 
 Instead of hearing about feedback loops, they can *observe oscillation emerge*.
 
-This kind of step-by-step exploration builds intuition that static diagrams cannot provide.
+Step-by-step exploration builds intuition that static diagrams cannot provide.
 
 ---
 
-## 2.4 Perfect for Assignments and Projects
+## 2.4 Well-Suited for Assignments and Projects
 
 Emu is well suited for coursework and hands-on assignments.
 
@@ -146,7 +146,7 @@ It introduces foundational ideas in a concrete form:
 
 The environment is simple enough for beginners, yet expressive enough for advanced coursework.
 
-Students can begin with small reactive nodes and gradually build larger systems with nontrivial global behavior.
+Students can begin with small nodes and gradually build larger systems with nontrivial global behavior.
 
 ---
 

@@ -14,7 +14,8 @@ System design often mixes core logic with concurrency and timing concerns. Emu s
 
 Because execution is deterministic and fully reproducible, behavior can be tested, inspected, and debugged step by step. This makes it easier to uncover design flaws — such as incorrect event routing, unintended feedback loops, missing or inconsistent state transitions, or logical contradictions in node behavior — before those structural issues are obscured by timing and concurrency complexity.
 
-# Usage
+# 🚀 Usage
+
 
 Using Emu typically follows four steps:
 

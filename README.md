@@ -1,103 +1,96 @@
 # 🐦 Emu  
-### *A playground for building networks of communicating finite‑state machines*
+Emu is a lightweight deterministic execution engine for building and evaluating networks of finite-state machines (FSMs).
 
-Emu is a lightweight runtime for constructing, wiring, and executing **networks of communicating finite‑state machines (FSMs)**.  
 It provides a simple, expressive way to:
 
-- define **local behavior** of small programmable machines  
-- connect them into a **causal message‑passing network**  
-- run the system with **deterministic event‑driven execution**
+- define the local behavior of small programmable machines  
+- connect them into a statically wired, event-driven network  
+- execute the system deterministically through state transitions  
+- inspect the complete execution history via immutable snapshots 
+---
 
-Emu is not a simulator.  
-Each node runs on a **real stack‑based virtual machine**, and the message‑passing layer is **pluggable**.  
-The default transport is a shared FIFO queue — ideal for exploration, teaching, and prototyping.
+# 🎯 Why Emu
+System design often mixes core logic with concurrency and timing concerns. Emu separates these concerns by isolating state transitions and event flow in a deterministic environment.
+
+Because execution is deterministic and fully reproducible, behavior can be tested, inspected, and debugged step by step. This makes it easier to uncover design flaws — such as incorrect event routing, unintended feedback loops, missing or inconsistent state transitions, or logical contradictions in node behavior — before those structural issues are obscured by timing and concurrency complexity.
+
+## Usage
+
+Using Emu typically follows four steps:
+
+### 1. Define node behavior
+
+Each node runs a small deterministic program on a stack-based virtual machine (VM).  
+Handlers describe how the node reacts when a value arrives on a specific input port.
+
+A handler can:
+
+- read and update the node’s local state  
+- inspect metadata (such as port counts)  
+- emit values to output ports  
+- halt execution if needed  
+
+Node programs are intentionally small and focused — they should react quickly and perform bounded work.
 
 ---
 
-# 🎯 Who Emu Is For
+### 2. Define node state
 
-Emu is designed for developers, researchers, and system architects who want to validate **high‑level intent** rather than low‑level timing behavior.
+Each node has persistent local state, represented as a list of integers.
 
-### ✔ Validate protocol logic and design intent  
-Emu helps uncover:
-- incorrect event routing  
-- unintended feedback loops  
-- missing or inconsistent state transitions  
-- logical contradictions in node behavior  
+The state:
 
-### ✔ Analyze high‑level system structure  
-Emu makes it easy to see:
-- how data flows through the network  
-- which nodes activate and in what order  
-- what global behavior emerges from local rules  
+- survives across events  
+- is private to the node  
+- is updated only by its VM program  
 
-### ✔ Prototype architectural ideas before implementation  
-Emu lets you quickly:
-- sketch a topology  
-- define node behavior  
-- observe what the system *actually* does  
-
-### ✔ Focus on semantics, not physics  
-Emu **does not** model:
-- physical time  
-- parallel execution  
-- races, hazards, metastability  
-- delays, jitter, or hardware effects  
-
-This is intentional:  
-Emu reveals **semantic** issues, not **electrical** ones.
-
-### ✔ Explore emergent behavior  
-Global dynamics arise from:
-- local rules  
-- topology  
-- causal dependencies  
-
-Emu is ideal for studying such systems.
+This keeps logic local and explicit.
 
 ---
 
-# 🚧 Model and Scope
+### 3. Connect nodes through topology
 
-Emu implements a clean, high‑level computational model:
+Nodes are connected into a **statically wired, event-driven network**.
 
-- ✔ deterministic  
-- ✔ event‑driven  
-- ✔ finite‑state  
-- ✔ explicit topology  
-- ✔ causal dataflow  
+Connections define subscriptions:
 
-Emu does **not** attempt to model:
+- when a node emits a value on an output port  
+- the network routes that value to all subscribed input ports  
 
-- ✘ physical timing  
-- ✘ concurrency or interleavings  
-- ✘ races, hazards, metastability  
-- ✘ nondeterministic transitions  
-
-This keeps Emu predictable, analyzable, and easy to reason about.
+There is no dynamic discovery, shared memory, or implicit routing.  
+All communication is explicit and defined by the topology.
 
 ---
 
-# 🏗️ Emu as a Real Runtime
+### 4. Execute the system
 
-Each node in Emu contains a **deterministic stack‑based virtual machine**:
+The engine evaluates the network by processing events one by one.
 
-- a stack  
-- a small instruction set  
-- persistent local state  
-- strict, deterministic semantics  
+Internally, Emu:
 
-The VM is not simulated — it is an actual execution engine.
+- maintains a FIFO event queue  
+- delivers events to subscribed nodes  
+- runs the corresponding VM handler  
+- enqueues any emitted values as new events  
+- records an immutable snapshot after each transition  
 
-The only replaceable component is the **transport layer**.  
-You can swap the default FIFO queue for:
+Execution is deterministic:  
+given the same initial state and input schedule, the result is always identical.
 
-- a message bus  
-- a hardware interrupt system  
-- a distributed transport  
-- a custom scheduler  
+The full execution history can be inspected afterward for analysis and debugging.
 
-The node logic and VM remain unchanged.
+---
+
+## Core Concepts (Recap)
+
+Under the hood, Emu consists of four composable parts:
+
+- **VM** — runs node handler programs  
+- **Node** — holds local state and input/output ports  
+- **Net** — defines static topology and routing  
+- **Executor** — drives event delivery and records snapshots  
+
+Together, they form a small deterministic execution engine for state-machine networks.
 
 ---
 

@@ -1,0 +1,178 @@
+Emu Project Context (Condensed Continuation Prompt)
+
+I am developing Emu, a deterministic execution engine for statically wired networks of communicating finite-state machines (CFSMs).
+
+Core Definition
+
+Emu implements a deterministic, time-free execution model for statically wired networks of communicating finite-state machines, evaluating causal event propagation to quiescence and producing immutable snapshots of each transition.
+
+Computational Model (Short Form)
+
+Finite set of nodes N
+
+FIFO global event queue E
+
+Each node has a deterministic transition function δᵢ
+
+Execution repeatedly:
+
+dequeues head of E
+
+applies δᵢ
+
+updates node state
+
+appends emitted events to tail of E
+
+Stops when E is empty
+
+Deterministic by construction.
+
+Architecture Layers
+1. VM
+
+Each node contains a small deterministic stack-based virtual machine.
+
+Components:
+
+Stack
+
+Persistent memory (mem)
+
+Metadata memory (meta_mem)
+
+Register A (incoming payload injected here)
+
+Emission mechanism (symbolic out ports)
+
+Bounded execution (max_steps)
+
+Properties:
+
+No time
+
+No concurrency
+
+No randomness
+
+No external I/O
+
+No pull semantics
+
+Push-only emissions
+
+Handlers bound to specific input ports
+
+Possible lifecycle instructions (Halt / Shutdown)
+
+2. Node
+
+Holds persistent state
+
+Maps input ports to handler programs
+
+Maps symbolic out ports to actual routing IDs
+
+Can enter halted state (removed from routing)
+
+3. Net
+
+Static topology
+
+Maps (src_node, out_port) → list of (dst_node, in_port)
+
+Pure routing layer
+
+4. Evaluator (currently runtime.ml)
+
+Maintains FIFO queue
+
+Delivers events
+
+Executes handlers
+
+Collects emissions
+
+Runs avalanches until quiescence
+
+5. Snapshot / Digest
+
+Immutable snapshots after each transition
+
+Full history stored
+
+Deterministic replay possible
+
+Used for debugging, analysis, education
+
+Design Goals
+
+Emu exists to:
+
+Make complex distributed logic easy to approach
+
+Isolate causal logic from timing and concurrency
+
+Enable deterministic experimentation
+
+Allow step-by-step introspection
+
+Serve as:
+
+execution engine
+
+educational tool
+
+distributed algorithm lab
+
+FSM network unfolder
+
+Emu is push-based:
+
+Handlers receive payload in regA
+
+Programs cannot pull from network
+
+Programs cannot address specific nodes
+
+Programs emit to symbolic streams
+
+Topology defines causality
+
+Current Work Direction
+
+We are writing:
+
+Emu Handbook
+
+Detailed VM documentation
+
+Computational Model chapter
+
+Operational Semantics chapter
+
+Determinism & Ordering Guarantees
+
+Push-based semantics
+
+Lifecycle design (Halt vs Shutdown discussion)
+
+Positioning (execution engine vs runtime vs simulator)
+
+Next tasks will likely involve:
+
+Refining VM layer description
+
+Clarifying lifecycle semantics
+
+Improving documentation structure
+
+Possibly evolving instruction set
+
+🔹 Instruction to Assistant in New Conversation
+
+Continue helping with technical documentation and architectural reasoning for Emu.
+Be precise.
+Avoid unnecessary poetics.
+Keep terminology consistent.
+Assume deterministic, time-free, FIFO event model as described above.

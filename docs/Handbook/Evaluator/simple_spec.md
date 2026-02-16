@@ -1,6 +1,6 @@
 If We Rewrite Emu in Pure Form
 
-Engine definition:
+## Engine definition:
 
 Given:
     Nodes : NodeId → State

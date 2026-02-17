@@ -1,68 +1,38 @@
-# STEP 3 — Dynamics (Atomic Unfolding Semantics)
+# STEP 3 — Dynamics (Approach 1: Late Routing Semantics)
 
-This section defines the dynamic semantics of an FSM Network.
+This section defines the dynamic semantics of a
+Deterministic Network of Reactive State Machines
+under Approach 1 (Emitted Values as pending objects).
 
-The evolution of the network is described in terms of:
+In this approach:
 
-- Global State
-- Pending Events
-- Snapshot
-- Atomic transition rule
-
----
-
-## 1. Global State
-
-A Global State is a mapping:
-
-    σ : NodeId → Sₙ
-
-For each node n ∈ N:
-
-    σ(n) ∈ Sₙ
-
-A Global State represents the intrinsic state of all nodes in the network.
+- The pending sequence contains **Emitted Values**.
+- Routing expansion occurs at dequeue time.
+- One atomic step updates exactly one node state.
 
 ---
 
-## 2. Pending Event Sequence
+## 1. Snapshot
 
-A Pending Event Sequence is a finite ordered list:
-
-    E = [ e₁, e₂, ..., e_k ]
-
-Each event has the form:
-
-    (src, op, v)
-
-where:
-
-- src ∈ NodeId
-- op ∈ OutPorts(src)
-- v ∈ Value
-
-The order of this sequence determines which event is processed next.
-
----
-
-## 3. Snapshot
-
-A Snapshot is a pair:
+A Snapshot is:
 
     Snapshot = (σ, E)
 
 where:
 
-- σ is a Global State
-- E is a Pending Event Sequence
+- σ : NodeId → State   (Global State)
+- E = [ e₁, e₂, ..., e_k ]   (ordered list of Emitted Values)
 
-A Snapshot represents the complete dynamic state of the network.
+Each emitted value has the form:
+
+    e = (src, op, v)
 
 ---
 
-## 4. Subscriber Order
+## 2. Subscriber Function
 
-For each source endpoint (src, op), define the ordered subscriber list:
+For each output endpoint (src, op),
+define the ordered subscriber list:
 
     Subs(src, op) =
         [ (dst₁, ip₁), (dst₂, ip₂), ..., (dst_m, ip_m) ]
@@ -71,87 +41,92 @@ such that:
 
     ((src, op), (dstᵢ, ipᵢ)) ∈ R
 
-The order of Subs(src, op) is part of the static structure
-and determines delivery order.
+The order of Subs(src, op) is part of the static structure.
 
 ---
 
-## 5. Atomic Delivery Step
+## 3. Atomic Delivery Step
 
 Let the current Snapshot be:
 
     (σ, (src, op, v) :: E_rest)
 
-Let (dst, ip) be the first unprocessed subscriber
-in Subs(src, op).
+Let:
+
+    Subs(src, op) =
+        [ (dst₁, ip₁), ..., (dst_m, ip_m) ]
+
+The reaction to this head emission consists of a sequence
+of atomic delivery steps, one per subscriber,
+processed in the order of Subs(src, op).
+
+---
+
+### Atomic Step (for subscriber i)
+
+Assume the next subscriber to process is:
+
+    (dst, ip)
 
 Let:
 
     σ(dst) = s
 
-Compute:
+Compute the local transition:
 
     (s', outs) = δ_dst(s, ip, v)
-
-Define updated Global State:
-
-    σ' = σ[ dst ↦ s' ]
-
-Only the state of node dst is modified.
-
----
-
-## Emission Expansion (Net-Level Out-Events)
-
-Let the local transition of the delivered-to node be:
-
-    (s', outs) = δ_sub(s, ip, v)
 
 where:
 
     outs = [ (op₁, v₁), ..., (op_k, v_k) ]
 
-Each element (opᵢ, vᵢ) is an emission produced by node sub
-on its output port opᵢ.
+Define the updated Global State:
 
-These emissions are converted into pending out-events by tagging
-the emitting node as the event source:
+    σ' = σ[ dst ↦ s' ]
 
-    E_emit = [ (sub, op₁, v₁), ..., (sub, op_k, v_k) ]
+Define newly produced Emitted Values:
 
-The pending event sequence is updated by appending E_emit to E_rest:
+    E_emit =
+        [ (dst, op₁, v₁), ..., (dst, op_k, v_k) ]
+
+Append them to the end of the pending list:
 
     E' = E_rest ++ E_emit
 
+The resulting Snapshot after this atomic step is:
+
+    (σ', E')
+
+Each atomic step:
+
+- consumes exactly one subscriber of the head emission
+- updates exactly one node state
+- appends newly emitted values
+- produces exactly one new Snapshot
 
 ---
 
-## 7. Atomic Transition Rule
+## 4. Completion of a Reaction
 
-The atomic unfolding step is:
+After all subscribers in Subs(src, op) have been processed,
+the head emission (src, op, v) is fully consumed.
+
+At that point, processing continues with the next element
+in the pending sequence.
+
+---
+
+## 5. Transition Relation
+
+The small-step transition relation is:
 
     (σ, (src, op, v) :: E_rest)
         ⇒
     (σ', E')
 
-Each atomic transition:
+where σ' and E' are obtained by processing
+the next subscriber of (src, op, v).
 
-- processes exactly one subscriber
-- updates exactly one node-local state
-- produces exactly one new Snapshot
-
----
-
-## 8. Full Reaction to a Head Event
-
-If:
-
-    Subs(src, op) =
-        [ (dst₁, ip₁), ..., (dst_m, ip_m) ]
-
-then the complete reaction to event (src, op, v)
-is the sequence of atomic transitions,
-applied in subscriber order.
-
-After the final subscriber is processed,
-the event is removed from the Pending Event Sequence.
+The full reaction to one emitted value
+is the finite sequence of atomic transitions
+corresponding to its ordered subscriber list.

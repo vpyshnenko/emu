@@ -1,117 +1,115 @@
-# STEP 2 — Static Structure of an FSM Network
+# STEP 2 — Static Structure of a Deterministic Network of Reactive State Machines
 
-This section defines the static structure of an FSM Network.  
-Static structure specifies how ontological entities are organized and related.
+This section defines the static structure of the network.
+The static structure describes how reactive state machines
+are organized and interconnected.
 
----
-
-## 1. Node Structure
-
-Each node n ∈ NodeId is defined by the following components.
-
-### 1.1 Input Port Set
-
-A finite set:
-
-    InPorts(n) ⊆ InPortId
-
-This set defines all input ports belonging to node n.
+No dynamic behavior is defined in this section.
 
 ---
 
-### 1.2 Output Port Set
+## 1. Node Interface Structure
 
-A finite set:
+For each NodeId n, the following are statically defined:
 
-    OutPorts(n) ⊆ OutPortId
+- A finite set of input ports:
 
-This set defines all output ports belonging to node n.
+      InPorts(n) ⊆ InPortId
 
-If ordering is required by the execution model, OutPorts(n) is treated as an ordered finite list.
+- A finite set of output ports:
 
----
+      OutPorts(n) ⊆ OutPortId
 
-### 1.3 Local State Space
-
-Each node has an associated state space:
-
-    Sₙ ⊆ State
-
-This defines all possible local states that node n may assume.
+Ports are local to their node.
+Input and output ports are distinct.
 
 ---
 
-### 1.4 Initial Local State
+## 2. Local Transition Function
 
-Each node has a distinguished initial state:
+For each NodeId n, there exists a deterministic
+local transition function:
 
-    sₙ⁰ ∈ Sₙ
+      δₙ : State × InPortId × Value
+            → State × List(OutPortId × Value)
+
+This function satisfies:
+
+- It is defined only for input ports belonging to InPorts(n).
+- For a given (state, input port, value),
+  the result is uniquely determined.
+- The result consists of:
+    - a new local State
+    - a finite ordered list of emitted values
+
+Each emitted value has the form:
+
+      (op, v)
+
+where op ∈ OutPorts(n).
 
 ---
 
-### 1.5 Transition Function
+## 3. Connectivity Relation
 
-Each node defines a deterministic transition function:
+The network contains a static connectivity relation:
 
-    δₙ : Sₙ × InPortId × Value
-          → Sₙ × List(OutPortId × Value)
+      R ⊆ (NodeId × OutPortId)
+           ×
+           (NodeId × InPortId)
 
-For a given:
-- current local state
-- input port
-- input value
+An element of R has the form:
 
-the transition function returns:
-- a new local state
-- an ordered list of emissions
+      ((src, op), (dst, ip))
 
-Each emission is a pair:
+and means:
 
-    (out_port, value)
+- values emitted at output port op of node src
+  are routed to input port ip of node dst.
+
+---
+
+## 4. Subscriber Ordering
+
+For each output endpoint (src, op),
+define the ordered subscriber list:
+
+      Subs(src, op) =
+          [ (dst₁, ip₁), (dst₂, ip₂), ..., (dst_m, ip_m) ]
 
 such that:
 
-    out_port ∈ OutPorts(n)
+      ((src, op), (dstᵢ, ipᵢ)) ∈ R
+
+The order of this list is part of the static structure.
 
 ---
 
-## 2. Network Connectivity
+## 5. Well-Formedness Conditions
 
-The connectivity of the network is defined by a routing relation:
+The static structure satisfies:
 
-    R ⊆ (NodeId × OutPortId) × (NodeId × InPortId)
+1. For every ((src, op), (dst, ip)) ∈ R:
 
-An element
+       op ∈ OutPorts(src)
+       ip ∈ InPorts(dst)
 
-    ((n₁, op), (n₂, ip)) ∈ R
+2. For every NodeId n:
 
-means that an emission from node n₁ on output port op
-is connected to node n₂ at input port ip.
+       δₙ only produces output ports in OutPorts(n).
 
-Connectivity constraints:
-
-- op ∈ OutPorts(n₁)
-- ip ∈ InPorts(n₂)
+3. The set of nodes is finite.
 
 ---
 
-## 3. Network Definition
+## 6. Network Definition
 
-An FSM Network is defined as the tuple:
+A Network consists of:
 
-    Network =
-      (
-        N,
-        { InPorts(n) }ₙ,
-        { OutPorts(n) }ₙ,
-        { Sₙ }ₙ,
-        { sₙ⁰ }ₙ,
-        { δₙ }ₙ,
-        R
-      )
-
-Where:
-
-- N is a finite set of NodeIds
-- Each node n ∈ N is fully specified by its ports, state space, initial state, and transition function
-- R defines connectivity between nodes
+- A finite set of NodeIds
+- For each node:
+    - its input ports
+    - its output ports
+    - its local transition function
+- A static connectivity relation R
+- An ordered subscriber list derived from R

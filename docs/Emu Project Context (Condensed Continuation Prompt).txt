@@ -1,173 +1,213 @@
 Emu Project Context (Condensed Continuation Prompt)
 
-I am developing Emu, a deterministic execution engine for statically wired networks of communicating finite-state machines (CFSMs).
+I am developing Emu, a deterministic execution engine for statically wired networks of communicating Reactive State Machines.
 
-Core Definition
+# EMU FORMAL SPECIFICATION — CONDENSED CONTEXT SUMMARY
 
-Emu implements a deterministic, time-free execution model for statically wired networks of communicating finite-state machines, evaluating causal event propagation to quiescence and producing immutable snapshots of each transition.
+## MODEL IDENTITY
 
-Computational Model (Short Form)
+Emu is formalized as a:
 
-Finite set of nodes N
+    Deterministic Network of Reactive State Machines
 
-FIFO global event queue E
+It is:
 
-Each node has a deterministic transition function δᵢ
+- Deterministic
+- Untimed
+- Asynchronous (in the sense of partial state updates)
+- Message-driven
+- Small-step operational
+- Interleaving semantics
+- Causally traceable
 
-Execution repeatedly:
+It belongs to:
 
-dequeues head of E
+- Communicating automata
+- Reactive transition systems
 
-applies δᵢ
+with deterministic subscriber ordering and a single global pending frontier.
 
-updates node state
+---
 
-appends emitted events to tail of E
+## ONTOLOGY
 
-Stops when E is empty
+Primitive domains:
 
-Deterministic by construction.
+- NodeId
+- InPortId
+- OutPortId
+- Value
+- State
 
-Architecture Layers
-1. VM
+Core entities:
 
-Each node contains a small deterministic stack-based virtual machine.
+- Node (reactive state machine)
+- Input Port
+- Output Port
+- Emitted Value: (src, op, v)
+- Delivered Event: (dst, ip, v)
+- Network (nodes + routing relation)
+- Global State: σ : NodeId → State
+- Snapshot (Approach 1):
+      Snapshot = (σ, E)
+  where E is an ordered list of Emitted Values
 
-Components:
+---
 
-Stack
+## STATIC STRUCTURE
 
-Persistent memory (mem)
+For each node n:
 
-Metadata memory (meta_mem)
+    δₙ : State × InPortId × Value
+          → State × List(OutPortId × Value)
 
-Register A (incoming payload injected here)
+Connectivity:
 
-Emission mechanism (symbolic out ports)
+    R ⊆ (NodeId × OutPortId)
+          ×
+         (NodeId × InPortId)
 
-Bounded execution (max_steps)
+Subscriber order:
+
+    Subs(src, op) = ordered list derived from R
+
+---
+
+## TWO EMISSION–DELIVERY SEMANTICS
+
+### Approach 1 — Late Routing (CANONICAL)
+
+Queue contains:
+
+    (src, op, v)
+
+On dequeue:
+
+- Expand subscribers
+- Deliver sequentially
+- Each subscriber → one atomic snapshot
+- Emissions appended as (dst, op_i, v_i)
 
 Properties:
 
-No time
+- Rich causality grouping
+- Natural fan-out blocks
+- Smaller queue
+- No stale deliveries
+- Dynamic routing compatible
+- Hot observable semantics
 
-No concurrency
+This is the canonical Emu semantics.
 
-No randomness
+---
 
-No external I/O
+### Approach 2 — Early Routing (Derived / Testing Mode)
 
-No pull semantics
+Queue contains:
 
-Push-only emissions
+    (dst, ip, v)
 
-Handlers bound to specific input ports
+Routing expanded at enqueue time.
 
-Possible lifecycle instructions (Halt / Shutdown)
+Pros:
 
-2. Node
+- Simpler dequeue
+- One dequeue = one snapshot
+- Good for isolated node testing
 
-Holds persistent state
+Cons:
 
-Maps input ports to handler programs
+- Loses native causality grouping
+- Needs provenance metadata for trace reconstruction
+- Emissions vanish without subscribers unless special handling added
+- Routing decisions frozen at enqueue time
 
-Maps symbolic out ports to actual routing IDs
+Conclusion:
 
-Can enter halted state (removed from routing)
+Approach 1 retained as canonical semantics.
 
-3. Net
+---
 
-Static topology
+## DYNAMICS (APPROACH 1 SUMMARY)
 
-Maps (src_node, out_port) → list of (dst_node, in_port)
+Snapshot:
 
-Pure routing layer
+    (σ, (src, op, v) :: E_rest)
 
-4. Evaluator (currently runtime.ml)
+For each subscriber in order:
 
-Maintains FIFO queue
+    (dst, ip)
 
-Delivers events
+Compute:
 
-Executes handlers
+    (s', outs) = δ_dst(σ(dst), ip, v)
 
-Collects emissions
+Update:
 
-Runs avalanches until quiescence
+    σ' = σ[dst ↦ s']
 
-5. Snapshot / Digest
+Append:
 
-Immutable snapshots after each transition
+    [(dst, op_i, v_i)]
 
-Full history stored
+Reaction to one emission produces a sequence of atomic steps
+(interleaving semantics).
 
-Deterministic replay possible
+---
 
-Used for debugging, analysis, education
+## EXTERNAL INTERACTION
 
-Design Goals
+External world may:
 
-Emu exists to:
+- Inject emitted values (src, op, v)
+- Observe emitted values
 
-Make complex distributed logic easy to approach
+External world does NOT:
 
-Isolate causal logic from timing and concurrency
+- Directly modify state
+- Inject delivered events
 
-Enable deterministic experimentation
+---
 
-Allow step-by-step introspection
+## CONCURRENCY MODEL
 
-Serve as:
+Emu:
 
-execution engine
+- Is untimed
+- Is asynchronous (partial state updates)
+- Admits interleaving semantics
+- Uses deterministic scheduling
+- Has causally ordered execution
 
-educational tool
+---
 
-distributed algorithm lab
+## KEY CONCEPTUAL INSIGHT
 
-FSM network unfolder
+Approach 1 models output ports as:
 
-Emu is push-based:
+    Hot event sources (FRP analogy without time)
 
-Handlers receive payload in regA
+Emissions exist independently of subscription.
 
-Programs cannot pull from network
+---
 
-Programs cannot address specific nodes
+## CONTINUATION INSTRUCTION
 
-Programs emit to symbolic streams
+Continue working on the formal specification of the
+Deterministic Network of Reactive State Machines,
+using Approach 1 (Late Routing Semantics) as canonical.
 
-Topology defines causality
+Maintain clean separation between:
 
-Current Work Direction
+- Ontology
+- Static structure
+- Dynamics
+- External interaction
+- Observables
+- Failure behavior
 
-We are writing:
+Avoid mixing implementation details.
 
-Emu Handbook
-
-Detailed VM documentation
-
-Computational Model chapter
-
-Operational Semantics chapter
-
-Determinism & Ordering Guarantees
-
-Push-based semantics
-
-Lifecycle design (Halt vs Shutdown discussion)
-
-Positioning (execution engine vs runtime vs simulator)
-
-Next tasks will likely involve:
-
-Refining VM layer description
-
-Clarifying lifecycle semantics
-
-Improving documentation structure
-
-Possibly evolving instruction set
 
 🔹 Instruction to Assistant in New Conversation
 

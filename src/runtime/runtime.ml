@@ -49,8 +49,8 @@ let deliver_event snap (ev : event) =
        in
 
        let snap = Snapshot.with_net snap net_after in
-       let outs = List.rev outs in
-
+	   
+       (* Preserve handler emission order when enqueuing into the global FIFO. *)
        let snap =
          List.fold_left
            (fun snap (out_p, v) ->

@@ -68,11 +68,10 @@ let connect { from = (src_id, out_p); to_ = (dst_id, in_p) } net =
     | None -> []
   in
 
-  let routing =
-    IntPairMap.add (src_id, out_p) ((dst_id, in_p) :: old) net.routing
-  in
-
-  { net with routing }
+let routing =
+  IntPairMap.add (src_id, out_p) (old @ [(dst_id, in_p)]) net.routing
+in
+{ net with routing }
 
 (* ------------------------------------------------------------ *)
 (* Deliver an event to a single destination node                *)

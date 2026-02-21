@@ -23,6 +23,24 @@ let create ~stack_capacity ~max_steps ~mem_size =
 let empty = { stack_capacity = 0; max_steps = 0; mem_size = 0 }
 
 (* ------------------------------------------------------------ *)
+(* Stdlib Queue alias (avoid conflict with Emu's Queue module)  *)
+(* ------------------------------------------------------------ *)
+
+module StdQueue = Stdlib.Queue
+
+(* Ordered output buffer (preserves emission order) *)
+type 'a out_buffer = 'a StdQueue.t
+
+let create_out () : 'a out_buffer =
+  StdQueue.create ()
+
+let add_out (q : 'a out_buffer) (x : 'a) : unit =
+  StdQueue.add x q
+
+let finalize_out (q : 'a out_buffer) : 'a list =
+  StdQueue.to_seq q |> List.of_seq
+
+(* ------------------------------------------------------------ *)
 (* Pure semantics for normal instructions                       *)
 (* ------------------------------------------------------------ *)
 
@@ -95,7 +113,7 @@ let eval_normal
 
   (* --- Metadata memory (meta_mem) --- *)
   | LoadMeta meta ->
-    let i = Meta.to_int meta in
+      let i = Meta.to_int meta in
       if i < 0 || i >= Array.length meta_mem then
         failwith "VM: LoadMeta index out of bounds"
       else
@@ -135,6 +153,7 @@ let eval_normal
 
 (* ------------------------------------------------------------ *)
 (* Execute a single instruction                                 *)
+(* (outs are appended directly into the program output buffer)   *)
 (* ------------------------------------------------------------ *)
 
 let exec_instr
@@ -143,28 +162,25 @@ let exec_instr
     ~(mem : int array)
     ~(meta_mem : int array)
     ~(regA : int ref)
+    ~(emit : int -> unit)
     ~(out_port_count : int)
-  : control * Stack.t * (int * int) list =
-  let outs = ref [] in
-  let emit idx =
-    outs := (idx, !regA) :: !outs
-  in
+  : control * Stack.t =
   match instr with
   (* --- Control instructions --- *)
   | Instructions.Halt ->
-      (Halt, st, !outs)
+      (Halt, st)
 
   | Instructions.HaltIfEq (n, x) ->
       let v = Stack.get_nth st n in
-      if v = x then (Halt, st, !outs)
-      else (Continue, st, !outs)
+      if v = x then (Halt, st)
+      else (Continue, st)
 
   (* --- Normal instructions --- *)
   | _ ->
       let st' =
         eval_normal instr st ~mem ~meta_mem ~regA ~emit ~out_port_count
       in
-      (Continue, st', !outs)
+      (Continue, st')
 
 (* ------------------------------------------------------------ *)
 (* Execute a full program                                       *)
@@ -198,19 +214,26 @@ let exec_program
   (* Operational stack starts empty *)
   let st = Stack.create ~stack_capacity:vm.stack_capacity in
 
-  let outputs = ref [] in
+  (* One ordered program output buffer *)
+  let outputs_q : (int * int) out_buffer = create_out () in
+
+  (* Emit closure appends directly into program buffer *)
+  let emit idx =
+    add_out outputs_q (idx, !regA)
+  in
+
+  let code_len = List.length code in
 
   let rec loop st pc steps =
     if steps >= vm.max_steps then
       failwith "VM: max_steps limit exceeded"
-    else if pc < 0 || pc >= List.length code then
+    else if pc < 0 || pc >= code_len then
       (st, false)
     else
       let instr = List.nth code pc in
-      let (ctl, st', outs) =
-        exec_instr st instr ~mem ~meta_mem ~regA ~out_port_count
+      let (ctl, st') =
+        exec_instr st instr ~mem ~meta_mem ~regA ~emit ~out_port_count
       in
-      outputs := outs @ !outputs;
       match ctl with
       | Continue ->
           loop st' (pc + 1) (steps + 1)
@@ -222,4 +245,6 @@ let exec_program
 
   (* Pack RAM back into node state list *)
   let final_state = Array.to_list mem in
-  (final_state, !outputs, halted)
+  (* Invariant: outputs are in chronological emission order across the program. *)
+  let outputs = finalize_out outputs_q in
+  (final_state, outputs, halted)

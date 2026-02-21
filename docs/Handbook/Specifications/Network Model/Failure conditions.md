@@ -68,22 +68,47 @@ A halted node:
 
 - Does not execute its transition function.
 - Produces no emissions.
+- Does not modify its local state.
 
 If an emission is delivered to a halted node:
 
 - The delivery is ignored.
 - The global state σ remains unchanged.
+- No emissions are produced.
 - No failure occurs.
 
-Formally:
+Formally, if σ(dst) is halted and
+(dst, ip) ∈ Subs(src, op), then the delivery step produces:
 
-If σ(dst) is halted, then delivery produces:
+    (σ, (src, op, v) :: E)
+        →
+    (σ, E)
 
-    (σ, E) → (σ, E')
+with no state update and no appended emissions.
 
-with no state change and no new emissions.
+### Topology Preservation
 
-Routing structure R is not modified.
+The static subscription structure `Subs` is part of the
+network's static structure and is not semantically modified
+by halting.
+
+### Permitted Optimization
+
+Because delivery to a halted node is defined as a no-op and
+is observationally silent, an implementation may optimize
+execution by:
+
+- Removing subscriptions whose destination is halted, or
+- Skipping such deliveries during evaluation.
+
+Such optimizations must preserve:
+
+- The order of deliveries to non-halted subscribers.
+- The set and order of emitted values.
+- Deterministic behavior of the system.
+
+These optimizations are required to be semantically
+equivalent to the formal rule above.
 
 ---
 

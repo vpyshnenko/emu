@@ -107,6 +107,12 @@ let rec run_avalanches ?stop_when snap history = function
   | [] ->
       Digest.make ~initial_snapshot:snap ~history
   | ev :: rest ->
+      (* enforce quiescence-only injection *)
+      if not (Queue.is_empty snap.queue) then
+        failwith "runtime: injection only allowed at quiescence (queue not empty)";
+	  
+      Net.validate_emit_source snap.net ev.src ev.out_port;
+	  
       let snap = enqueue ev snap in
       let snap, history = run_avalanche snap history in
 

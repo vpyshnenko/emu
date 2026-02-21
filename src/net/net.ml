@@ -117,3 +117,20 @@ let subscribers net src out_port =
   match IntPairMap.find_opt (src, out_port) net.routing with
   | Some lst -> lst
   | None -> []
+
+
+(* ------------------------------------------------------------ *)
+(* Validation: (src_id, out_port_id)                             *)
+(* ------------------------------------------------------------ *)
+
+let is_valid_emit_source (net : t) (src_id : int) (out_p : int) : bool =
+  match IntMap.find_opt src_id net.nodes with
+  | None -> false
+  | Some src_node -> Node.has_out_port src_node out_p
+
+let validate_emit_source (net : t) (src_id : int) (out_p : int) : unit =
+  if not (is_valid_emit_source net src_id out_p) then
+    failwith
+      (Printf.sprintf
+         "net: invalid emission source (node_id=%d, out_port_id=%d)"
+         src_id out_p)

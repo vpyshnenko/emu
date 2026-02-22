@@ -7,7 +7,7 @@ An avalanche may be visualized as a circular causal wave propagating outward in 
 
 This chapter formalizes that geometric embedding.
 
-![Circular Wave Diagram](docs/images/Circular_wave.png)
+![Circular Wave Diagram](/docs/images/Circular_wave.png)
 
 ---
 

@@ -23,24 +23,6 @@ let create ~stack_capacity ~max_steps ~mem_size =
 let empty = { stack_capacity = 0; max_steps = 0; mem_size = 0 }
 
 (* ------------------------------------------------------------ *)
-(* Stdlib Queue alias (avoid conflict with Emu's Queue module)  *)
-(* ------------------------------------------------------------ *)
-
-module StdQueue = Stdlib.Queue
-
-(* Ordered output buffer (preserves emission order) *)
-type 'a out_buffer = 'a StdQueue.t
-
-let create_out () : 'a out_buffer =
-  StdQueue.create ()
-
-let add_out (q : 'a out_buffer) (x : 'a) : unit =
-  StdQueue.add x q
-
-let finalize_out (q : 'a out_buffer) : 'a list =
-  StdQueue.to_seq q |> List.of_seq
-
-(* ------------------------------------------------------------ *)
 (* Pure semantics for normal instructions                       *)
 (* ------------------------------------------------------------ *)
 
@@ -70,7 +52,7 @@ let eval_normal
   | AddMod ->
       let input, st = pop st in
       let acc, st = pop st in
-      let ceil = peek st in
+      let ceil, st = pop st in
       let sum = acc + input in
       if sum < ceil then
         push 0 (push sum st)
@@ -214,12 +196,12 @@ let exec_program
   (* Operational stack starts empty *)
   let st = Stack.create ~stack_capacity:vm.stack_capacity in
 
-  (* One ordered program output buffer *)
-  let outputs_q : (int * int) out_buffer = create_out () in
+  (* Ordered program output buffer (Snoc) *)
+  let outputs_q : (int * int) Snoc.t = Snoc.create () in
 
-  (* Emit closure appends directly into program buffer *)
+  (* Emit closure appends directly into Snoc buffer *)
   let emit idx =
-    add_out outputs_q (idx, !regA)
+    Snoc.add outputs_q (idx, !regA)
   in
 
   let code_len = List.length code in
@@ -245,6 +227,8 @@ let exec_program
 
   (* Pack RAM back into node state list *)
   let final_state = Array.to_list mem in
-  (* Invariant: outputs are in chronological emission order across the program. *)
-  let outputs = finalize_out outputs_q in
+
+  (* Outputs in chronological emission order across the program *)
+  let outputs = Snoc.to_list outputs_q in
+
   (final_state, outputs, halted)

@@ -1,5 +1,5 @@
 (library
  (name digest)
  (public_name emu.digest)
- (libraries emu.net emu.step)
+ (libraries emu.net emu.snoc emu.step)
 )

@@ -1,0 +1,4 @@
+(library
+ (name snoc)
+ (public_name emu.snoc)
+)

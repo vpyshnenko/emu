@@ -130,7 +130,7 @@ let res_stream =
   Digest.node_out_stream_on_port ~node_id:idC ~out_port:outC digest
 in
 
-Printf.printf "Total steps: %d\n" (Digest.total_steps digest.history);
+Printf.printf "Total steps: %d\n" (Digest.total_steps digest);
 Printf.printf "NodeC emitted values: %s\n" (pp_list res_stream);
 
 assert_equal [1; 1; 2; 3; 5; 8; 13] res_stream

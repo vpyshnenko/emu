@@ -17,6 +17,12 @@
  )
  
 (test
+ (name test_digital_vault)
+ (libraries emu.runtime emu.builder ounit2)
+ (enabled_if false)
+ )
+ 
+(test
  (name test_runtime)
  (libraries emu.runtime  ounit2)
  (enabled_if false)

@@ -28,8 +28,10 @@ let test_fibonacci_mod_network _ctx =
 	Load 0; (* put 0 as initial value for counter *)
 	PushA; (* push incoming value *)
     AddMod;
-	PeekA; (* copy overflow val to regA *)
-    EmitIfNonZero 1;   (* overflow symbolic index *)
+	Eq 1;
+	BranchOf [|
+	  [ PeekA; EmitTo 1; ] (* emit 1 to port 0 if overflow occured *)
+	|];
     Pop;    (* remove overflow val  from stack *)
     PeekA; (* copy sum to reg A *)
     EmitTo 0;          (* default symbolic index *)
@@ -39,7 +41,10 @@ let test_fibonacci_mod_network _ctx =
   (* forward_prog: takes symbolic index for ch_out *)
   let forward_prog ch_out = [
 	  Load 0; (* copy counter val *)
-      HaltIfEq (0, 0);
+	  Eq 0;
+	  BranchOf [|
+	    [ Halt; ] (* halt if counter = 0 *)
+	  |];
       EmitTo 0;        (* default symbolic index *)
       EmitTo ch_out;   (* symbolic index for ch_out *)
       PushConst (-1);
@@ -133,7 +138,7 @@ in
 Printf.printf "Total steps: %d\n" (Digest.total_steps digest);
 Printf.printf "NodeC emitted values: %s\n" (pp_list res_stream);
 
-assert_equal [1; 1; 2; 3; 5; 8; 13] res_stream
+assert_equal [1; 1; 2; 3; 5; 8; 13; ] res_stream
   
 
 (* ------------------------------------------------------------ *)

@@ -17,6 +17,12 @@ type control =
   | Continue
   | Halt
 
+type exec_result = {
+  st : Stack.t;
+  control : control;
+  remaining_code : instr list;  (* Instructions left to execute *)
+}
+
 let create ~stack_capacity ~max_steps ~mem_size =
   { stack_capacity; max_steps; mem_size }
 
@@ -43,6 +49,13 @@ let eval_normal
 
   | PushConst n ->
       push n st
+	  
+  | Eq x ->
+     let top = peek st in  (* Peek, don't pop *)
+     if top = x then
+       push 0 st    (* Equal -> push 0 on top *)
+     else
+       push 1 st    (* Not equal -> push 1 on top *)
 
   | Add ->
       let a, st = pop st in
@@ -130,39 +143,59 @@ let eval_normal
 
   (* --- Control instructions should not reach here --- *)
   | Halt
-  | HaltIfEq _ ->
+  | HaltIfEq _
+  | BranchOf _ ->
       failwith "eval_normal: unexpected control instruction"
 
 (* ------------------------------------------------------------ *)
 (* Execute a single instruction                                 *)
-(* (outs are appended directly into the program output buffer)   *)
+(* (outs are appended directly into the program output buffer) *)
 (* ------------------------------------------------------------ *)
 
 let exec_instr
     (st : Stack.t)
     (instr : instr)
+    (rest_code : instr list)  (* Remaining code after this instruction *)
     ~(mem : int array)
     ~(meta_mem : int array)
     ~(regA : int ref)
     ~(emit : int -> unit)
     ~(out_port_count : int)
-  : control * Stack.t =
+  : exec_result =
   match instr with
   (* --- Control instructions --- *)
   | Instructions.Halt ->
-      (Halt, st)
+      { st; control = Halt; remaining_code = [] }
 
   | Instructions.HaltIfEq (n, x) ->
       let v = Stack.get_nth st n in
-      if v = x then (Halt, st)
-      else (Continue, st)
+      if v = x then 
+        { st; control = Halt; remaining_code = [] }
+      else
+        { st; control = Continue; remaining_code = rest_code }
+
+  (* --- New Branches instruction --- *)
+  | Instructions.BranchOf branches ->
+      let idx, st' = pop st in
+      
+      if idx >= 0 && idx < Array.length branches then
+        (* Valid branch - prepend its instructions to the rest of the program *)
+        let branch_code = branches.(idx) in
+        { 
+          st = st'; 
+          control = Continue; 
+          remaining_code = branch_code @ rest_code  (* Prepend branch, then continue with rest *)
+        }
+      else
+        (* Invalid index - just continue with rest of program *)
+        { st = st'; control = Continue; remaining_code = rest_code }
 
   (* --- Normal instructions --- *)
   | _ ->
       let st' =
         eval_normal instr st ~mem ~meta_mem ~regA ~emit ~out_port_count
       in
-      (Continue, st')
+      { st = st'; control = Continue; remaining_code = rest_code }
 
 (* ------------------------------------------------------------ *)
 (* Execute a full program                                       *)
@@ -204,26 +237,27 @@ let exec_program
     Snoc.add outputs_q (idx, !regA)
   in
 
-  let code_len = List.length code in
-
-  let rec loop st pc steps =
+  let rec loop st remaining_code steps =
     if steps >= vm.max_steps then
       failwith "VM: max_steps limit exceeded"
-    else if pc < 0 || pc >= code_len then
-      (st, false)
     else
-      let instr = List.nth code pc in
-      let (ctl, st') =
-        exec_instr st instr ~mem ~meta_mem ~regA ~emit ~out_port_count
-      in
-      match ctl with
-      | Continue ->
-          loop st' (pc + 1) (steps + 1)
-      | Halt ->
-          (st', true)
+      match remaining_code with
+      | [] -> 
+          (* No more code to execute *)
+          (st, false)
+      | instr :: rest ->
+          let result = 
+            exec_instr st instr rest 
+              ~mem ~meta_mem ~regA ~emit ~out_port_count
+          in
+          match result.control with
+          | Halt ->
+              (result.st, true)
+          | Continue ->
+              loop result.st result.remaining_code (steps + 1)
   in
 
-  let _final_stack, halted = loop st 0 0 in
+  let _final_stack, halted = loop st code 0 in
 
   (* Pack RAM back into node state list *)
   let final_state = Array.to_list mem in
@@ -232,3 +266,4 @@ let exec_program
   let outputs = Snoc.to_list outputs_q in
 
   (final_state, outputs, halted)
+

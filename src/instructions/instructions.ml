@@ -8,6 +8,8 @@ type instr =
   | AddMod
   | LogStack
   
+  | Eq of int  (* Compare top of stack with constant X *)
+  
   | PushA
   | PopA
   | PeekA
@@ -27,3 +29,5 @@ type instr =
   (* Control flow *)
   | Halt
   | HaltIfEq of int * int
+  | BranchOf of instr list array
+  

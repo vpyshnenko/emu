@@ -17,9 +17,9 @@
  )
  
 (test
- (name test_digital_vault)
+ (name test_digital_locker)
  (libraries emu.runtime emu.builder ounit2)
- (enabled_if false)
+ ;(enabled_if false)
  )
  
 (test

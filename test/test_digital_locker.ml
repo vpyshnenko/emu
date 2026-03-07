@@ -75,7 +75,8 @@ let test_digital_vault _ctx =
 	
     let inResetAuth =
       bRouter.add_handler [
-        PushConst 0;
+        (* PushConst 0; *)
+        PushConst 1;
  	    Store 1;
       ]
     in
@@ -257,7 +258,7 @@ let init_snap = Runtime.create ~lifespan:1000 net in
   (* ------------------------------------------------------------ *)
   (* Schedule                                                     *)
   (* ------------------------------------------------------------ *)
-  let schedule = [
+  (* let schedule = [
     (* { Runtime.src = idExt; out_port = out_reset_setup; payload = 1 }; *)
 	
     { Runtime.src = idExt; out_port = out_ext_payload; payload = 42 };
@@ -270,30 +271,66 @@ let init_snap = Runtime.create ~lifespan:1000 net in
     (* { Runtime.src = idExt; out_port = out_reset_auth; payload = 1 }; *)
     (* { Runtime.src = idExt; out_port = out_auth_digit; payload = 1 };	 *)
 	
-  ] in
+  ] in *)
 
-let digest =
-  Runtime.run ~schedule init_snap
+let digest1 =
+  Runtime.run init_snap ~schedule:[
+    { Runtime.src = idExt; out_port = out_ext_payload; payload = 42 };
+    { Runtime.src = idExt; out_port = out_setup_digit; payload = 1 };
+	
+  ] 
 in
 
 let out_setup_ok_stream =
-  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_setup_ok digest
+  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_setup_ok digest1
+in
+
+assert_equal [1] out_setup_ok_stream;
+
+let digest2 =
+  Runtime.run digest1.final_snapshot ~schedule:[
+    { Runtime.src = idExt; out_port = out_auth_digit; payload = 0 };
+  ] 
+  
 in
 
 let out_auth_fail_stream =
-  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_auth_fail digest
+  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_auth_fail digest2
+in
+
+assert_equal [1] out_auth_fail_stream;
+
+let digest3 =
+  Runtime.run digest2.final_snapshot ~schedule:[
+    { Runtime.src = idExt; out_port = out_reset_auth; payload = 1 };
+    { Runtime.src = idExt; out_port = out_auth_digit; payload = 1 };
+  ] 
+  
+in
+
+let out_auth_fail_stream =
+  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_auth_fail digest3
+in
+
+let out_auth_ok_stream =
+  Digest.node_out_stream_on_port ~node_id:idLeaf1 ~out_port:out_auth_ok1 digest3
 in
 
 let out_payload_stream =
-  Digest.node_out_stream_on_port ~node_id:idPayload ~out_port:out_payload digest
+  Digest.node_out_stream_on_port ~node_id:idPayload ~out_port:out_payload digest3
 in
 
-Printf.printf "Total steps: %d\n" (Digest.total_steps digest);
+assert_equal [] out_auth_fail_stream;
+assert_equal [1] out_auth_ok_stream;
+assert_equal [42] out_payload_stream;
+
+
+Printf.printf "Total steps: %d\n" (Digest.total_steps digest2);
 Printf.printf "NodeObs out_setup_ok: %s\n" (pp_list out_setup_ok_stream);
 Printf.printf "NodeObs out_auth_fail: %s\n" (pp_list out_auth_fail_stream);
+Printf.printf "nodeLeaf1 out_auth_ok: %s\n" (pp_list out_auth_ok_stream);
 Printf.printf "nodePayload out_payload: %s\n" (pp_list out_payload_stream)
 
-(* assert_equal [1] res_stream *)
 
 
 

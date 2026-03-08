@@ -19,78 +19,51 @@ type router = {
   output : router_output;
 }
 
-let make_router ~n () : router =
+let _make_router ~n ~is_root () : router =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
+  (* Root starts with tokens=1, children start with tokens=0 *)
+  let initial_state = if is_root then [1;1] else [0;0] in
+  let b = Builder.Node.create ~state:initial_state ~vm in
   
-  (* Create the node builder with initial state [setup_token; auth_token] *)
-  let b = Builder.Node.create ~state:[1;1] ~vm in
-  
-  (* Add input handlers and capture their port IDs *)
-  let in_setup_digit = 
-    b.add_handler [
-      Load 0;        (* Stack: [token] - push setup_token onto stack *)
-      Eq 1;          (* Stack: [0] if token==1, [1] if token!=1 *)
-      BranchOf [|
-        [  (* Token present case - branch index 0 *)
-          PushA;     (* Stack: [digit] - push digit from register A *)
-          Emit;      (* Send digit to port = digit value (routes to leaf[digit]) *)
-          PushConst 0;  (* Stack: [0] - prepare to clear token *)
-          Store 0;      (* state[0] = 0 - clear setup_token *)
-        ];
-        (* Token absent case - empty branch, just continue *)
+  let input = {
+    setup_digit = b.add_handler [ 
+      Load 0; Eq 1; BranchOf [|
+        [ PushA; Emit; PushConst 0; Store 0 ];
       |];
-    ]
-  in
-  
-  let in_auth_digit =
-    b.add_handler [
-      Load 1;        (* Stack: [token] - push auth_token from state[1] *)
-      Eq 1;          (* Stack: [0] if token==1, [1] if token!=1 *)
-      BranchOf [|
-        [  (* Token present case *)
-          PushA;     (* Stack: [digit] - push auth digit from regA *)
-          PushConst 2;  (* Stack: [digit, 2] - push shift constant *)
-          Add;       (* Stack: [digit+2] - shift to auth port range *)
-          Emit;      (* Send to port = digit+2 (routes to leaf[digit] auth port) *)
-          PushConst 0;  (* Stack: [0] - prepare to clear token *)
-          Store 1;      (* state[1] = 0 - clear auth_token *)
-        ];
+    ];
+    auth_digit = b.add_handler [
+      Load 1; Eq 1; BranchOf [|
+        [ PushA; PushConst 2; Add; Emit; PushConst 0; Store 1 ];
       |];
-    ]
-  in
+    ];
+    (* Reset behavior depends on router type *)
+    reset_setup = b.add_handler (
+      if is_root then
+        [ PushConst 1; Store 0 ]  (* Root: re-arm setup_token *)
+      else
+        [ PushConst 0; Store 0 ]  (* Child: keep disabled *)
+    );
+    reset_auth = b.add_handler (
+      if is_root then
+        [ PushConst 1; Store 1 ]  (* Root: re-arm auth_token *)
+      else
+        [ PushConst 0; Store 1 ]  (* Child: keep disabled *)
+    );
+  } in
   
-  let in_reset_setup =
-    b.add_handler [
-      PushConst 1;   (* Push 1 to set token *)
-      Store 0;       (* state[0] = 1 - set setup_token *)
-    ]
-  in
+  let output = {
+    setup = Array.init n (fun _ -> b.add_out_port ());
+    auth = Array.init n (fun _ -> b.add_out_port ());
+  } in
   
-  let in_reset_auth =
-    b.add_handler [
-      PushConst 1;   (* Push 1 to set token *)
-      Store 1;       (* state[1] = 1 - set auth_token *)
-    ]
-  in
-  
-  (* Create output ports and capture their IDs *)
-  let out_setup = Array.init n (fun _ -> b.add_out_port ()) in
-  let out_auth = Array.init n (fun _ -> b.add_out_port ()) in
-  
-  (* Finalize the node - this creates the actual Node.t with a unique ID *)
   let node = b.finalize () in
   
   {
-    id = node.Node.id;  (* Get the assigned ID from the finalized node *)
+    id = node.id;
 	node;
-    input = {
-      setup_digit = in_setup_digit;
-      auth_digit = in_auth_digit;
-      reset_setup = in_reset_setup;
-      reset_auth = in_reset_auth;
-    };
-    output = {
-      setup = out_setup;
-      auth = out_auth;
-    }
+    input;
+    output;
   }
+
+let make_root_router ~n = _make_router ~n ~is_root:true () 
+let make_router ~n = _make_router ~n ~is_root:false () 

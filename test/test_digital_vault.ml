@@ -258,18 +258,18 @@ let init_snap = Runtime.create ~lifespan:1000 net in
   (* ------------------------------------------------------------ *)
   (* Schedule                                                     *)
   (* ------------------------------------------------------------ *)
-  (* let schedule = [
-    (* { Runtime.src = idExt; out_port = out_reset_setup; payload = 1 }; *)
+  (*let schedule = [
+    { Runtime.src = idExt; out_port = out_reset_setup; payload = 1 };
 	
     { Runtime.src = idExt; out_port = out_ext_payload; payload = 42 };
     { Runtime.src = idExt; out_port = out_setup_digit; payload = 0 };
 	
-    (* { Runtime.src = idEx; out_port = out_reset_auth; payload = 1 }; *)
+    { Runtime.src = idEx; out_port = out_reset_auth; payload = 1 };
     { Runtime.src = idExt; out_port = out_auth_digit; payload = 0 };
 	
 	
-    (* { Runtime.src = idExt; out_port = out_reset_auth; payload = 1 }; *)
-    (* { Runtime.src = idExt; out_port = out_auth_digit; payload = 1 };	 *)
+    { Runtime.src = idExt; out_port = out_reset_auth; payload = 1 };
+    { Runtime.src = idExt; out_port = out_auth_digit; payload = 1 };	
 	
   ] in *)
 

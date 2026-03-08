@@ -1,0 +1,7 @@
+(test
+ (name test_digital_locker)
+ (libraries emu.runtime emu.builder ounit2)
+ (modules test_digital_locker router ext)
+  ;(enabled_if false)
+)
+

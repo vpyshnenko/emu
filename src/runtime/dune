@@ -1,5 +1,0 @@
-(library
- (name runtime)
- (public_name emu.runtime)
- (libraries emu.digest emu.snoc emu.net emu.node emu.queue emu.step)
-)

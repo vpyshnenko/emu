@@ -1,5 +1,5 @@
 open OUnit2
-open Dlist
+open Emu.Dlist
 
 let test_empty _ =
   assert_equal [] (to_list empty)

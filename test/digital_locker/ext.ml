@@ -1,12 +1,12 @@
 (* ext.ml - External events node for digital locker tests *)
-
+open Emu
 
 type ext_output = {
-  setup_digit : int;
-  auth_digit : int;
+  setup : int;
+  auth : int;
   payload : int;
-  reset_setup : int;
-  reset_auth : int;
+  setup_reset : int;
+  auth_reset : int;
   clear : int;
 }
 
@@ -21,11 +21,11 @@ let make_ext () : ext =
   let b = Builder.Node.create ~state:[] ~vm in
   
   let output = {
-      setup_digit = b.add_out_port ();
-      auth_digit = b.add_out_port ();
+      setup = b.add_out_port ();
+      auth = b.add_out_port ();
       payload = b.add_out_port ();
-      reset_setup = b.add_out_port ();
-      reset_auth = b.add_out_port ();
+      setup_reset = b.add_out_port ();
+      auth_reset = b.add_out_port ();
       clear = b.add_out_port ();
   } in
 	

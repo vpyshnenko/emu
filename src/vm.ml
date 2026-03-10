@@ -73,7 +73,7 @@ let eval_normal
         push 1 (push (sum - ceil) st)
 
   | LogStack ->
-      Printf.printf "Stack: [%s]\n"
+      Printf.printf "(Node %d) Stack: [%s]\n" meta_mem.(0)
         (String.concat "; "
            (List.map string_of_int (Stack.to_list st)));
       st

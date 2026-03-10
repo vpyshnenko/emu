@@ -1,4 +1,0 @@
-(library
- (name instructions)
- (public_name emu.instructions)
- (libraries emu.meta))

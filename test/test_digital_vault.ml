@@ -1,5 +1,6 @@
 open OUnit2
-open Instructions
+open Emu
+open Emu.Instructions
 
 let pp_list lst =
   "[" ^ (String.concat "; " (List.map string_of_int lst)) ^ "]"

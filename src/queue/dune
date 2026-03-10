@@ -1,4 +1,0 @@
-(library
- (name queue)
- (public_name emu.queue)
-)

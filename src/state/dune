@@ -1,4 +1,0 @@
-(library
- (name state)
- (public_name emu.state)
-)

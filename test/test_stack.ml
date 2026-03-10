@@ -1,5 +1,5 @@
 open OUnit2
-open Stack
+open Emu.Stack
 
 let test_create _ =
   let st = create ~stack_capacity:5 in

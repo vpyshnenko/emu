@@ -1,4 +1,5 @@
 open OUnit2
+open Emu
 
 let test_empty _ =
   let q = Queue.empty in

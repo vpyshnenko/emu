@@ -6,6 +6,8 @@ type instr =
   | PushConst of int
   | Add
   | AddMod
+  | Shl
+  | Shr
   | LogStack
   
   | Eq of int  (* Compare top of stack with constant X *)

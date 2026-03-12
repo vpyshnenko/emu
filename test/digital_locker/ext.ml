@@ -2,8 +2,8 @@
 open Emu
 
 type ext_output = {
-  setup : int;
-  auth : int;
+  setup_data : int;
+  auth_data : int;
   payload : int;
   setup_reset : int;
   auth_reset : int;
@@ -21,8 +21,8 @@ let make_ext () : ext =
   let b = Builder.Node.create ~state:[] ~vm in
   
   let output = {
-      setup = b.add_out_port ();
-      auth = b.add_out_port ();
+      setup_data = b.add_out_port ();
+      auth_data = b.add_out_port ();
       payload = b.add_out_port ();
       setup_reset = b.add_out_port ();
       auth_reset = b.add_out_port ();

@@ -71,6 +71,16 @@ let eval_normal
         push 0 (push sum st)
       else
         push 1 (push (sum - ceil) st)
+		
+  | Shl ->
+     let shift, st = pop st in
+     let value, st = pop st in
+     push (value lsl shift) st (* logical shift left *)
+
+  | Shr ->
+      let shift, st = pop st in
+      let value, st = pop st in
+      push (value lsr shift) st  (* logical shift right *)
 
   | LogStack ->
       Printf.printf "(Node %d) Stack: [%s]\n" meta_mem.(0)

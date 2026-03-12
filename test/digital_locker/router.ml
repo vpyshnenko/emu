@@ -1,9 +1,13 @@
+(* router.ml *)
+
 open Emu
 
 (* Define separate types for input and output port structures *)
 type router_input = {
-  setup : int;
-  auth : int;
+  setup_token : int;
+  auth_token : int;
+  setup_data: int;
+  auth_data: int;
   setup_reset : int;
   auth_reset : int;
 }
@@ -25,16 +29,29 @@ let _make_router ~n ~is_root () : router =
   let initial_state = if is_root then [1;1] else [0;0] in
   let b = Builder.Node.create ~state:initial_state ~vm in
   
-  let setup = b.add_handler [
-    LogStack;  
+  let setup_token = b.add_handler [
+    PushConst 1;
+	Store 0;
+  ] in
+  
+  let auth_token = b.add_handler [
+    PushConst 1;
+	Store 1;
+  ] in
+  
+  let setup_data = b.add_handler [
     Load 0; Eq 1; BranchOf [|
-      [ PushA; LogStack; Emit; PushConst 0; Store 0 ];
+      [ PushA; Emit; PushConst 0; Store 0 ];
     |];
   ] in
   
-  let auth = b.add_handler [
+  let auth_data = b.add_handler [
     Load 1; Eq 1; BranchOf [|
-      [ PushA; PushConst 2; Add; Emit; PushConst 0; Store 1 ];
+      [ 
+	    PushA;
+		LoadMeta OutPortCount; PushConst 1; Shr;  (* 2N >> 1 = N *)
+		Add; Emit; PushConst 0; Store 1 
+	  ];
     |];
   ] in
   
@@ -52,8 +69,10 @@ let _make_router ~n ~is_root () : router =
   
   (* Build the record with all captured port IDs *)
   let input = {
-    setup;
-    auth;
+    setup_token;
+    auth_token;
+    setup_data;
+    auth_data;
     setup_reset;
     auth_reset;
   } in

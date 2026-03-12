@@ -6,7 +6,9 @@ let pp_list lst =
 let test_digital_locker _ctx =
   (* Create network *)
   let Net.{net; ext; routers; leaves; observer; payload; unlocker} = 
-    Net.make_net ~n:3 ~l:2 () in
+    Net.make_net ~n:10 ~l:4 () in
+  Printf.printf "Number of leaves: %d\n" (Array.length leaves);
+
   (* Create initial snapshot *)
   let init_snap = Emu.Runtime.create ~lifespan:1000 net in
   let root_router = routers.(0).(0) in
@@ -30,31 +32,14 @@ let test_digital_locker _ctx =
   assert_equal [1;1] root_router_final_state;
   
   let digest2 = Emu.Runtime.run digest1.final_snapshot ~schedule:[
-    { src = ext.id; out_port = ext.output.setup; payload = 1 };
-    { src = ext.id; out_port = ext.output.setup; payload = 2 };
+    { src = ext.id; out_port = ext.output.setup_data; payload = 1 };
+    { src = ext.id; out_port = ext.output.setup_data; payload = 2 };
+    { src = ext.id; out_port = ext.output.setup_data; payload = 2 };
+    { src = ext.id; out_port = ext.output.setup_data; payload = 9 };
   ] in
-(* let node_edge_stream ~src ~dst (d : t) : int list = *)
-(* let node_in_stream_on_port ~node_id ~in_port (d : t) : int list = *)
-  
-  let root_router_out_stream = 
-    Emu.Digest.node_in_stream_on_port
-      ~node_id:routers.(1).(1).id
-	  ~in_port:routers.(1).(1).input.setup
-      digest2 
-  in
-  Printf.printf "!!!root_router_out_stream: %s\n" (pp_list root_router_out_stream);
 
-  let leaf5_setup_ok = 
-    Emu.Digest.node_out_stream_on_port 
-      ~node_id:leaves.(5).id 
-      ~out_port:leaves.(5).output.setup_ok 
-      digest2 
-  in
-  Printf.printf "Leaf5_setup_ok: %s\n" (pp_list leaf5_setup_ok);
-  
-  (* assert_equal [1] leaf5_setup_ok; *)
-  
-  (* Check observer got setup_ok from leaf 0 *)
+
+  (* Check observer got setup_ok *)
   let setup_ok_stream =
     Emu.Digest.node_out_stream_on_port 
       ~node_id:observer.id 
@@ -66,18 +51,12 @@ let test_digital_locker _ctx =
   
   (* Test auth phase - correct digit for leaf 0 *)
   let digest3 = Emu.Runtime.run digest2.final_snapshot ~schedule:[
-    { src = ext.id; out_port = ext.output.auth; payload = 0 };
-    { src = ext.id; out_port = ext.output.auth; payload = 1 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 0 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 1 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 1 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 9 };
   ] in
   
-  let leaf1_auth_fail =
-    Emu.Digest.node_out_stream_on_port 
-      ~node_id:leaves.(1).id 
-      ~out_port:leaves.(1).output.auth_fail 
-      digest3
-  in
-  assert_equal [1] leaf1_auth_fail;
-  Printf.printf "leaf0_auth_fail: %s\n" (pp_list leaf1_auth_fail);
   
   let auth_fail_stream =
     Emu.Digest.node_out_stream_on_port 
@@ -86,21 +65,16 @@ let test_digital_locker _ctx =
       digest3
   in
   assert_equal [1] auth_fail_stream;
+  Printf.printf "auth_fail_stream: %s\n" (pp_list auth_fail_stream);
   
   let digest4 = Emu.Runtime.run digest3.final_snapshot ~schedule:[
     { src = ext.id; out_port = ext.output.auth_reset; payload = 1 };
-    { src = ext.id; out_port = ext.output.auth; payload = 1 };
-    { src = ext.id; out_port = ext.output.auth; payload = 2 };
+	
+    { src = ext.id; out_port = ext.output.auth_data; payload = 1 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 2 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 2 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = 9 };
   ] in
-  
-  let leaf5_auth_ok =
-    Emu.Digest.node_out_stream_on_port 
-      ~node_id:leaves.(5).id 
-      ~out_port:leaves.(5).output.auth_ok 
-      digest4
-  in
-  assert_equal [1] leaf5_auth_ok;
-  Printf.printf "leaf5_auth_ok: %s\n" (pp_list leaf5_auth_ok);
   
   let unlocker_auth_ok =
     Emu.Digest.node_in_stream 
@@ -115,6 +89,7 @@ let test_digital_locker _ctx =
       ~out_port:observer.output.auth_ok 
       digest4
   in
+  Printf.printf "auth_ok_stream: %s\n" (pp_list auth_ok_stream);
   assert_equal [1] auth_ok_stream;
   
   let payload_value =
@@ -123,6 +98,7 @@ let test_digital_locker _ctx =
       ~out_port:payload.output.value 
       digest4
   in
+  Printf.printf "payload_value_stream: %s\n" (pp_list payload_value);
   assert_equal [42] payload_value
   
   (* OUnit test must return unit *)

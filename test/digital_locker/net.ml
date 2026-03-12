@@ -52,38 +52,39 @@ let make_net ~n ~l () : t =
   let idPayload = nb.add_node payload.node in
   let idUnlocker = nb.add_node unlocker.node in
   
-  (* Connect external to root router *)
-  (idExt, ext.output.setup_reset) --> (router_ids.(0).(0), routers.(0).(0).input.setup_reset);
-  (idExt, ext.output.auth_reset) --> (router_ids.(0).(0), routers.(0).(0).input.auth_reset);
-  (idExt, ext.output.setup) --> (router_ids.(0).(0), routers.(0).(0).input.setup);
-  (idExt, ext.output.auth) --> (router_ids.(0).(0), routers.(0).(0).input.auth);
   
   (* Connect external to payload *)
   (idExt, ext.output.payload) --> (idPayload, payload.input.set);
   (idExt, ext.output.clear) --> (idPayload, payload.input.clear);
   
-  (* Connect router layers *)
-  for layer = 0 to l-2 do
-    let current_layer = routers.(layer) in
-    let next_layer = routers.(layer+1) in
-    let next_layer_size = Array.length next_layer in
-    
-    (* Each router in current layer connects to n routers in next layer *)
-    for i = 0 to Array.length current_layer - 1 do
-      for digit = 0 to n-1 do
-        let target_idx = i * n + digit in
-        if target_idx < next_layer_size then
-          (router_ids.(layer).(i), current_layer.(i).output.setup.(digit)) --> 
-            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.setup);
+  (* Connect all routers *)
+  Array.iteri (fun layer current_layer ->
+    Array.iteri (fun i (router: Router.router) ->
+      let router_id = router_ids.(layer).(i) in
+      
+      (* External connections *)
+      (idExt, ext.output.setup_reset) --> (router_id, router.input.setup_reset);
+      (idExt, ext.output.auth_reset) --> (router_id, router.input.auth_reset);
+      (idExt, ext.output.setup_data) --> (router_id, router.input.setup_data);
+      (idExt, ext.output.auth_data) --> (router_id, router.input.auth_data);
+      
+      (* Connect to children *)
+      if layer < l-1 then
+        let next_layer = routers.(layer+1) in
+        Array.iteri (fun digit _ ->
+          let target_idx = i * n + digit in
+		  if target_idx >= Array.length next_layer then
+            failwith (Printf.sprintf 
+              "Invalid connection: layer %d router %d digit %d -> target %d (max %d)"
+              layer i digit target_idx (Array.length next_layer - 1));
+          (router_id, router.output.setup.(digit)) --> 
+            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.setup_token);
           
-          (router_ids.(layer).(i), current_layer.(i).output.auth.(digit)) --> 
-            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.auth);
-          
-          (idExt, ext.output.setup_reset) --> 
-            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.setup_reset)
-      done
-    done
-  done;
+          (router_id, router.output.auth.(digit)) --> 
+            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.auth_token)
+        ) (Array.init n Fun.id)
+    ) current_layer
+  ) routers;
   
   (* Connect last layer of routers to leaves *)
   let last_layer = routers.(l-1) in

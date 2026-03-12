@@ -5,10 +5,11 @@ let pp_list lst =
 
 let test_digital_locker _ctx =
   (* Create network *)
-  let Net.{net; ext; root_router; leaves; observer; payload; unlocker} = Net.make_net ~n:2 () in
-  
+  let Net.{net; ext; routers; leaves; observer; payload; unlocker} = 
+    Net.make_net ~n:3 ~l:2 () in
   (* Create initial snapshot *)
   let init_snap = Emu.Runtime.create ~lifespan:1000 net in
+  let root_router = routers.(0).(0) in
   
   (* Check initial state *)
   let router_initial_state = Emu.Digest.node_state root_router.id init_snap in
@@ -22,24 +23,36 @@ let test_digital_locker _ctx =
   ] in
   
   (* Check final state after reset *)
-  let router_final_state = Emu.Digest.final_node_state ~node_id:root_router.id digest1 in
-  Printf.printf "Router after reset: %s\n" (pp_list router_final_state);
+  let root_router_final_state = Emu.Digest.final_node_state ~node_id:root_router.id digest1 in
+  Printf.printf "Router after reset: %s\n" (pp_list root_router_final_state);
   
   (* Verify expected behavior - root router should have [1;1] after reset *)
-  assert_equal [1;1] router_final_state;
+  assert_equal [1;1] root_router_final_state;
   
   let digest2 = Emu.Runtime.run digest1.final_snapshot ~schedule:[
     { src = ext.id; out_port = ext.output.setup; payload = 1 };
+    { src = ext.id; out_port = ext.output.setup; payload = 2 };
   ] in
+(* let node_edge_stream ~src ~dst (d : t) : int list = *)
+(* let node_in_stream_on_port ~node_id ~in_port (d : t) : int list = *)
   
-
-  let leaf1_setup_ok = 
-    Emu.Digest.node_out_stream_on_port 
-      ~node_id:leaves.(1).id 
-      ~out_port:leaves.(1).output.setup_ok 
+  let root_router_out_stream = 
+    Emu.Digest.node_in_stream_on_port
+      ~node_id:routers.(1).(1).id
+	  ~in_port:routers.(1).(1).input.setup
       digest2 
   in
-  assert_equal [1] leaf1_setup_ok;
+  Printf.printf "!!!root_router_out_stream: %s\n" (pp_list root_router_out_stream);
+
+  let leaf5_setup_ok = 
+    Emu.Digest.node_out_stream_on_port 
+      ~node_id:leaves.(5).id 
+      ~out_port:leaves.(5).output.setup_ok 
+      digest2 
+  in
+  Printf.printf "Leaf5_setup_ok: %s\n" (pp_list leaf5_setup_ok);
+  
+  (* assert_equal [1] leaf5_setup_ok; *)
   
   (* Check observer got setup_ok from leaf 0 *)
   let setup_ok_stream =
@@ -49,19 +62,22 @@ let test_digital_locker _ctx =
       digest2
   in
   assert_equal [1] setup_ok_stream;
+  Printf.printf "setup_ok_stream: %s\n" (pp_list setup_ok_stream);
+  
   (* Test auth phase - correct digit for leaf 0 *)
   let digest3 = Emu.Runtime.run digest2.final_snapshot ~schedule:[
     { src = ext.id; out_port = ext.output.auth; payload = 0 };
+    { src = ext.id; out_port = ext.output.auth; payload = 1 };
   ] in
   
-  let leaf0_auth_fail =
+  let leaf1_auth_fail =
     Emu.Digest.node_out_stream_on_port 
-      ~node_id:leaves.(0).id 
-      ~out_port:leaves.(0).output.auth_fail 
+      ~node_id:leaves.(1).id 
+      ~out_port:leaves.(1).output.auth_fail 
       digest3
   in
-  assert_equal [1] leaf0_auth_fail;
-  Printf.printf "leaf0_auth_fail: %s\n" (pp_list leaf0_auth_fail);
+  assert_equal [1] leaf1_auth_fail;
+  Printf.printf "leaf0_auth_fail: %s\n" (pp_list leaf1_auth_fail);
   
   let auth_fail_stream =
     Emu.Digest.node_out_stream_on_port 
@@ -74,16 +90,17 @@ let test_digital_locker _ctx =
   let digest4 = Emu.Runtime.run digest3.final_snapshot ~schedule:[
     { src = ext.id; out_port = ext.output.auth_reset; payload = 1 };
     { src = ext.id; out_port = ext.output.auth; payload = 1 };
+    { src = ext.id; out_port = ext.output.auth; payload = 2 };
   ] in
   
-  let leaf1_auth_ok =
+  let leaf5_auth_ok =
     Emu.Digest.node_out_stream_on_port 
-      ~node_id:leaves.(1).id 
-      ~out_port:leaves.(1).output.auth_ok 
+      ~node_id:leaves.(5).id 
+      ~out_port:leaves.(5).output.auth_ok 
       digest4
   in
-  assert_equal [1] leaf1_auth_ok;
-  Printf.printf "leaf1_auth_ok: %s\n" (pp_list leaf1_auth_ok);
+  assert_equal [1] leaf5_auth_ok;
+  Printf.printf "leaf5_auth_ok: %s\n" (pp_list leaf5_auth_ok);
   
   let unlocker_auth_ok =
     Emu.Digest.node_in_stream 

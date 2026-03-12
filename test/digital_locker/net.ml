@@ -1,67 +1,118 @@
-(* net.ml - Network construction for digital locker tests *)
+(* net.ml - Network construction for hierarchical digital locker *)
 
 type t = {
   net : Emu.Net.t;
   ext : Ext.ext;
-  root_router : Router.router;
-  leaves : Leaf.leaf array;  (* Array for O(1) access by index *)
+  routers : Router.router array array;  (* [layer][branch] *)
+  leaves : Leaf.leaf array;              (* Final leaves at depth L *)
   observer : Observer.observer;
   payload : Payload.payload;
-  unlocker : Unlocker.unlocker; 
+  unlocker : Unlocker.unlocker;
 }
 
-let make_net ~n () : t =
-  let ext = Ext.make_ext () in
-  let root_router = Router.make_root_router ~n in
+let make_net ~n ~l () : t =
+  if l < 1 then failwith "Password length must be at least 1";
   
-  (* Create n leaves as array *)
-  let leaves = Array.init n (fun _ -> Leaf.make_leaf ()) in
-  let observer = Observer.make_observer () in  
+  let ext = Ext.make_ext () in
+  
+  (* Create hierarchical routers *)
+  let routers = Array.make l [||] in
+  
+  (* Layer 0 (root layer) - just one router *)
+  routers.(0) <- [| Router.make_root_router ~n |];
+  
+  (* Layers 1 to l-1 - n^(layer) routers *)
+  for layer = 1 to l-1 do
+    let count = int_of_float (float n ** float layer) in
+    routers.(layer) <- Array.init count (fun _ -> Router.make_router ~n)
+  done;
+  
+  (* Create leaves - n^l leaves at the bottom *)
+  let leaf_count = int_of_float (float n ** float l) in
+  let leaves = Array.init leaf_count (fun _ -> Leaf.make_leaf ()) in
+  
+  let observer = Observer.make_observer () in
   let payload = Payload.make_payload () in
-  let unlocker = Unlocker.make_unlocker ~n () in
+  let unlocker = Unlocker.make_unlocker ~n:leaf_count () in  (* One input per leaf *)
   
   (* Create network builder *)
   let nb, ( --> ) = Emu.Builder.Net.create () in
   
-  (* Add nodes to network *)
+  (* Add external node *)
   let idExt = nb.add_node ext.node in
-  let idRouter = nb.add_node root_router.node in
-  let idLeaves = Array.map (fun (lf: Leaf.leaf) -> nb.add_node lf.node) leaves in
+  
+  (* Add all routers *)
+  let router_ids = Array.map (Array.map (fun (r: Router.router)  -> nb.add_node r.node)) routers in
+  
+  (* Add all leaves *)
+  let leaf_ids = Array.map (fun (lf: Leaf.leaf) -> nb.add_node lf.node) leaves in
+  
+  (* Add observer, payload, unlocker *)
   let idObserver = nb.add_node observer.node in
   let idPayload = nb.add_node payload.node in
   let idUnlocker = nb.add_node unlocker.node in
   
-    (* External connections to payload cell *)
+  (* Connect external to root router *)
+  (idExt, ext.output.setup_reset) --> (router_ids.(0).(0), routers.(0).(0).input.setup_reset);
+  (idExt, ext.output.auth_reset) --> (router_ids.(0).(0), routers.(0).(0).input.auth_reset);
+  (idExt, ext.output.setup) --> (router_ids.(0).(0), routers.(0).(0).input.setup);
+  (idExt, ext.output.auth) --> (router_ids.(0).(0), routers.(0).(0).input.auth);
+  
+  (* Connect external to payload *)
   (idExt, ext.output.payload) --> (idPayload, payload.input.set);
   (idExt, ext.output.clear) --> (idPayload, payload.input.clear);
   
-  (* Connect external to router *)
-  (idExt, ext.output.setup_reset) --> (idRouter, root_router.input.setup_reset);
-  (idExt, ext.output.auth_reset) --> (idRouter, root_router.input.auth_reset);
-  (idExt, ext.output.setup) --> (idRouter, root_router.input.setup);
-  (idExt, ext.output.auth) --> (idRouter, root_router.input.auth);
-  
-  (* Connect router to each leaf *)
-  for i = 0 to n-1 do
-    (idRouter, root_router.output.setup.(i)) --> (idLeaves.(i), leaves.(i).input.setup);
-    (idRouter, root_router.output.auth.(i)) --> (idLeaves.(i), leaves.(i).input.auth);
-    (idExt, ext.output.setup_reset) --> (idLeaves.(i), leaves.(i).input.reset)  (* Optional: reset leaves *)
+  (* Connect router layers *)
+  for layer = 0 to l-2 do
+    let current_layer = routers.(layer) in
+    let next_layer = routers.(layer+1) in
+    let next_layer_size = Array.length next_layer in
+    
+    (* Each router in current layer connects to n routers in next layer *)
+    for i = 0 to Array.length current_layer - 1 do
+      for digit = 0 to n-1 do
+        let target_idx = i * n + digit in
+        if target_idx < next_layer_size then
+          (router_ids.(layer).(i), current_layer.(i).output.setup.(digit)) --> 
+            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.setup);
+          
+          (router_ids.(layer).(i), current_layer.(i).output.auth.(digit)) --> 
+            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.auth);
+          
+          (idExt, ext.output.setup_reset) --> 
+            (router_ids.(layer+1).(target_idx), next_layer.(target_idx).input.setup_reset)
+      done
+    done
   done;
   
-  (* Leaf auth_ok all go to unlocker *)
-  for i = 0 to n-1 do
-    (idLeaves.(i), leaves.(i).output.auth_ok) --> (idUnlocker, unlocker.input.auth_ok.(i))
+  (* Connect last layer of routers to leaves *)
+  let last_layer = routers.(l-1) in
+  for i = 0 to Array.length last_layer - 1 do
+    for digit = 0 to n-1 do
+      let leaf_idx = i * n + digit in
+      if leaf_idx < Array.length leaves then (
+        (router_ids.(l-1).(i), last_layer.(i).output.setup.(digit)) --> 
+          (leaf_ids.(leaf_idx), leaves.(leaf_idx).input.setup);
+        
+        (router_ids.(l-1).(i), last_layer.(i).output.auth.(digit)) --> 
+          (leaf_ids.(leaf_idx), leaves.(leaf_idx).input.auth);
+        
+        (idExt, ext.output.setup_reset) --> 
+          (leaf_ids.(leaf_idx), leaves.(leaf_idx).input.reset)
+      )
+    done
   done;
   
-  (* Unlocker fans out to both payload and observer *)
+  (* Connect leaves to unlocker and observer *)
+  for i = 0 to Array.length leaves - 1 do
+    (leaf_ids.(i), leaves.(i).output.auth_ok) --> (idUnlocker, unlocker.input.auth_ok.(i));
+    (leaf_ids.(i), leaves.(i).output.setup_ok) --> (idObserver, observer.input.setup_ok);
+    (leaf_ids.(i), leaves.(i).output.auth_fail) --> (idObserver, observer.input.auth_fail)
+  done;
+  
+  (* Connect unlocker to payload and observer *)
   (idUnlocker, unlocker.output.auth_ok) --> (idPayload, payload.input.unlock);
   (idUnlocker, unlocker.output.auth_ok) --> (idObserver, observer.input.auth_ok);
-  
-    (* Leaf to observer connections *)
-  for i = 0 to n-1 do
-    (idLeaves.(i), leaves.(i).output.setup_ok) --> (idObserver, observer.input.setup_ok);
-    (idLeaves.(i), leaves.(i).output.auth_fail) --> (idObserver, observer.input.auth_fail);
-  done;
   
   (* Finalize network *)
   let net = nb.finalize () in
@@ -69,13 +120,9 @@ let make_net ~n () : t =
   {
     net;
     ext;
-    root_router;
+    routers;
     leaves;
-	observer;
-	payload; 
-	unlocker;
+    observer;
+    payload;
+    unlocker;
   }
-
-(* Optional: Create initial snapshot for testing *)
-let create_initial_snapshot net =
-  Emu.Runtime.create ~lifespan:1000 net

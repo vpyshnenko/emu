@@ -25,7 +25,8 @@ let _make_router ~n ~is_root () : router =
   let initial_state = if is_root then [1;1] else [0;0] in
   let b = Builder.Node.create ~state:initial_state ~vm in
   
-  let setup = b.add_handler [ 
+  let setup = b.add_handler [
+    LogStack;  
     Load 0; Eq 1; BranchOf [|
       [ PushA; LogStack; Emit; PushConst 0; Store 0 ];
     |];

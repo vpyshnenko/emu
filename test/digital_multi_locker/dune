@@ -1,0 +1,7 @@
+(test
+ (name test_digital_multi_locker)
+ (libraries emu ounit2)
+ (modules test_digital_multi_locker router ext net leaf observer)
+  ;(enabled_if false)
+)
+

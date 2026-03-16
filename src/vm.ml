@@ -87,6 +87,11 @@ let eval_normal
         (String.concat "; "
            (List.map string_of_int (Stack.to_list st)));
       st
+  | LogMem ->
+      Printf.printf "(Node %d) Mem: [%s]\n" meta_mem.(0)
+        (String.concat "; "
+           (Array.to_list mem |> List.map string_of_int));
+      st
 
   (* --- Accumulator A operations --- *)
   | PushA ->

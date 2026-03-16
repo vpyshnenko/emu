@@ -8,7 +8,9 @@ type instr =
   | AddMod
   | Shl
   | Shr
+  
   | LogStack
+  | LogMem
   
   | Eq of int  (* Compare top of stack with constant X *)
   

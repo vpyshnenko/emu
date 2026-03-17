@@ -16,6 +16,7 @@ type t = {
 type control =
   | Continue
   | Halt
+  | Shutdown
 
 type exec_result = {
   st : Stack.t;
@@ -158,7 +159,7 @@ let eval_normal
 
   (* --- Control instructions should not reach here --- *)
   | Halt
-  | HaltIfEq _
+  | Shutdown
   | BranchOf _ ->
       failwith "eval_normal: unexpected control instruction"
 
@@ -181,13 +182,8 @@ let exec_instr
   (* --- Control instructions --- *)
   | Instructions.Halt ->
       { st; control = Halt; remaining_code = [] }
-
-  | Instructions.HaltIfEq (n, x) ->
-      let v = Stack.get_nth st n in
-      if v = x then 
-        { st; control = Halt; remaining_code = [] }
-      else
-        { st; control = Continue; remaining_code = rest_code }
+  | Instructions.Shutdown ->
+      { st; control = Shutdown; remaining_code = [] }
 
   (* --- New Branches instruction --- *)
   | Instructions.BranchOf branches ->
@@ -266,7 +262,9 @@ let exec_program
               ~mem ~meta_mem ~regA ~emit ~out_port_count
           in
           match result.control with
-          | Halt ->
+		  | Halt ->
+              (result.st, false)
+          | Shutdown ->
               (result.st, true)
           | Continue ->
               loop result.st result.remaining_code (steps + 1)

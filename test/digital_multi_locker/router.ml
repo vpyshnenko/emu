@@ -28,25 +28,28 @@ let make_router ~n : router =
   let b = Builder.Node.create ~state:initial_state ~vm in
   
   let setup_data = b.add_handler [
-    Load 0; Eq 1; BranchOf [|
-      [ Load 1; Emit; ];
+    Load 0; Eq 0; BranchOf [|
       [ 
 	    PushConst 1; Store 0; 
 		PushA; Store 1;
 	  ];
+      [ Load 1; Emit; ];
     |];
   ] in
   
   let auth_data = b.add_handler [
-    Load 0; Eq 1; BranchOf [|
-      [ Load 1; Emit; ];
+    Load 0; Eq 0; BranchOf [|
       [ 
 	    PushA;
 		LoadMeta OutPortCount; PushConst 1; Shr;  (* 2N >> 1 = N *)
 		Add; Store 1;
         PushConst 1; Store 0;		
 	  ];
+      [ PushConst 1; Add; Store 0; Load 1; Emit; ];
     |];
+	(* Load 0; Eq 2; BranchOf [| *)
+	  (* [ PushConst 1; PopA; Load 1; LogMem; Emit; ] *)
+	(* |]; *)
   ] in
   
   let setup_reset = b.add_handler [

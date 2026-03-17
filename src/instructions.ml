@@ -31,7 +31,7 @@ type instr =
   | EmitIfNonZero of int  (* same, but only if top-of-stack ≠ 0 *)
 
   (* Control flow *)
-  | Halt
-  | HaltIfEq of int * int
+  | Halt (* early return *)
+  | Shutdown (* exclude from further network evaluation *)
   | BranchOf of instr list array
   

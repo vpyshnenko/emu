@@ -44,7 +44,7 @@ let test_fibonacci_mod_network _ctx =
 	  Load 0; (* copy counter val *)
 	  Eq 0;
 	  BranchOf [|
-	    [ Halt; ] (* halt if counter = 0 *)
+	    [ Shutdown; ] (* power off if counter = 0 *)
 	  |];
       EmitTo 0;        (* default symbolic index *)
       EmitTo ch_out;   (* symbolic index for ch_out *)
@@ -92,7 +92,7 @@ let test_fibonacci_mod_network _ctx =
   *)
   let inC_ch1 = bC.add_handler (forward_prog 1) in
   let inC_ch2 = bC.add_handler (forward_prog 2) in
-  let inC_overflow = bC.add_handler [Halt] in
+  let inC_overflow = bC.add_handler [Shutdown] in
 
   let nodeC = bC.finalize () in
 

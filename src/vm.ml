@@ -57,6 +57,22 @@ let eval_normal
        push 0 st    (* Equal -> push 0 on top *)
      else
        push 1 st    (* Not equal -> push 1 on top *)
+	   
+  | Gt x ->
+      let top = peek st in
+      if top > x then push 0 st else push 1 st
+  
+  | Lt x ->
+      let top = peek st in
+      if top < x then push 0 st else push 1 st
+  
+  | Ge x ->
+      let top = peek st in
+      if top >= x then push 0 st else push 1 st
+  
+  | Le x ->
+      let top = peek st in
+      if top <= x then push 0 st else push 1 st
 
   | Add ->
       let a, st = pop st in

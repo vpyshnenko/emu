@@ -13,6 +13,11 @@ type instr =
   | LogMem
   
   | Eq of int  (* Compare top of stack with constant X *)
+  | Gt of int  
+  | Lt of int  
+  | Ge of int  
+  | Le of int  
+  
   
   | PushA
   | PopA
@@ -32,6 +37,6 @@ type instr =
 
   (* Control flow *)
   | Halt (* early return *)
-  | Shutdown (* exclude from further network evaluation *)
+  | Shutdown (* exclude curent node from further network evaluation *)
   | BranchOf of instr list array
   

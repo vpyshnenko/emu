@@ -17,12 +17,12 @@ let make_net ~n ~l () : t =
   let routers = Array.make l [||] in
   
   (* Layer 0 (root layer) - just one router *)
-  routers.(0) <- [| Router.make_router ~n |];
+  routers.(0) <- [| Router.make_router ~n ~l ~is_root:true () |];
   
   (* Layers 1 to l-1 - n^(layer) routers *)
   for layer = 1 to l-1 do
     let count = int_of_float (float n ** float layer) in
-    routers.(layer) <- Array.init count (fun _ -> Router.make_router ~n)
+    routers.(layer) <- Array.init count (fun _ -> Router.make_router ~n ~l ~is_root:false ())
   done;
   
   (* Create leaves - n^l leaves at the bottom *)

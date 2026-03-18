@@ -22,46 +22,91 @@ type router = {
   output : router_output;
 }
 
-let make_router ~n : router =
+let make_router ~n ~l ~is_root (): router =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
-  let initial_state = [0;0] in
+  let count = if is_root then (l - 1) else (-1) in
+  
+  let initial_state = if is_root then [count; -1] else [-1;-1] in
   let b = Builder.Node.create ~state:initial_state ~vm in
   
+  
+  
   let setup_data = b.add_handler [
-    Load 0; Eq 0; BranchOf [|
+    Load 0; Eq (-1); BranchOf [|
+	    [ PushA; PushConst (-1); Add; Store 0; Halt];
+	|];
+	Load 1; Eq (-1); BranchOf [|
       [ 
-	    PushConst 1; Store 0; 
 		PushA; Store 1;
+        Load 0; Gt 0; BranchOf [|
+		 [ PopA; Load 1; Emit;]
+        |]		 
 	  ];
-      [ Load 1; Emit; ];
+      [ Load 1; Emit; 
+	  	Load 0; PushConst (-1); Add; Store 0;
+		Eq (-1); BranchOf [|
+		  [ 
+		    PushConst count; Store 0;
+		    PushConst (-1); Store 1;
+		  ]
+		|]
+	  ]
     |];
   ] in
+  
+
   
   let auth_data = b.add_handler [
-    Load 0; Eq 0; BranchOf [|
-      [ 
-	    PushA;
-		LoadMeta OutPortCount; PushConst 1; Shr;  (* 2N >> 1 = N *)
-		Add; Store 1;
-        PushConst 1; Store 0;		
+    Load 0; Eq (-1); BranchOf [|
+	    [ PushA; PushConst (-1); Add; Store 0; Halt];
+	|];
+    Load 1; Eq (-1); BranchOf [|
+	  [ 
+		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
+	    PushA; Add; Store 1; LogMem;
+        Load 0; PopA; Load 1; Emit;		
 	  ];
-      [ PushConst 1; Add; Store 0; Load 1; Emit; ];
+      [ 
+	    Load 1; Emit; 
+	    Load 0; PushConst (-1); Add; Store 0;
+		Eq 0; BranchOf [|
+		  [ 
+		    PushConst count; Store 0;
+		    PushConst (-1); Store 1;
+		  ]
+		|]
+		
+	  ];
     |];
-	(* Load 0; Eq 2; BranchOf [| *)
-	  (* [ PushConst 1; PopA; Load 1; LogMem; Emit; ] *)
-	(* |]; *)
+  ] in 
+  
+ (* let auth_data = b.add_handler [
+    Load 0; Eq (-1); BranchOf [|
+	    [ PushConst 0; Store 0; Halt];
+	|];
+    Load 1; Eq (-1); BranchOf [|
+	  [ 
+		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
+	    PushA; Add; Store 1;
+        Emit;		
+	  ];
+      [ 
+	    Load 0; PushConst 1; Add; Store 0; LogMem;
+	    Load 1; Emit; 
+	  ];
+    |];
+  ] in *)
+  
+    
+  let setup_reset = b.add_handler [
+    PushConst count;	Store 0;
+	PushConst (-1); Store 1;
   ] in
   
-  let setup_reset = b.add_handler [
-    PushConst 0;
-	Store 0;
-	Store 1;
-  ] in
   
   let auth_reset = b.add_handler [
-    PushConst 0;
-	Store 0;
-	Store 1;
+    PushConst count;	Store 0;
+	PushConst (-1); Store 1;
   ] in
   
   (* OUTPUT PORTS - in declaration order *)

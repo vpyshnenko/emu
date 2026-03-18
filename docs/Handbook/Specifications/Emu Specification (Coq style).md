@@ -28,7 +28,7 @@ Inductive instr :=
 | EmitTo (k : nat)
 | EmitIfNonZero (k : nat)
 | Halt
-| HaltIfEq (n : nat) (x : Z).
+| Shutdown
 
 Definition Program := list instr.
 

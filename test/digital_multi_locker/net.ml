@@ -50,8 +50,6 @@ let make_net ~n ~l () : t =
   
   
        (* External connections *)
-  (idExt, ext.output.setup_reset) --> (root_router.id, root_router.input.setup_reset);
-  (idExt, ext.output.auth_reset) --> (root_router.id, root_router.input.auth_reset);
   (idExt, ext.output.setup_data) --> (root_router.id, root_router.input.setup_data);
   (idExt, ext.output.auth_data) --> (root_router.id, root_router.input.auth_data);
       
@@ -60,10 +58,6 @@ let make_net ~n ~l () : t =
   Array.iteri (fun layer current_layer ->
     Array.iteri (fun i (router: Router.router) ->
       let router_id = router_ids.(layer).(i) in
-      
-      (* External connections *)
-      (idExt, ext.output.setup_reset) --> (router_id, router.input.setup_reset);
-      (idExt, ext.output.auth_reset) --> (router_id, router.input.auth_reset);
       
       (* Connect to children *)
       if layer < l-1 then

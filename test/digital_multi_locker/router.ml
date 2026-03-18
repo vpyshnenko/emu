@@ -6,8 +6,6 @@ open Emu
 type router_input = {
   setup_data: int;
   auth_data: int;
-  setup_reset : int;
-  auth_reset : int;
 }
 
 type router_output = {
@@ -24,7 +22,7 @@ type router = {
 
 let make_router ~n ~l ~is_root (): router =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
-  let count = if is_root then (l - 1) else (-1) in
+  let count = if is_root then l else (-1) in
   
   let initial_state = if is_root then [count; -1] else [-1;-1] in
   let b = Builder.Node.create ~state:initial_state ~vm in
@@ -38,13 +36,13 @@ let make_router ~n ~l ~is_root (): router =
 	Load 1; Eq (-1); BranchOf [|
       [ 
 		PushA; Store 1;
-        Load 0; Gt 0; BranchOf [|
+        Load 0; Gt 1; BranchOf [|
 		 [ PopA; Load 1; Emit;]
         |]		 
 	  ];
       [ Load 1; Emit; 
 	  	Load 0; PushConst (-1); Add; Store 0;
-		Eq (-1); BranchOf [|
+		Eq 0; BranchOf [|
 		  [ 
 		    PushConst count; Store 0;
 		    PushConst (-1); Store 1;
@@ -63,13 +61,13 @@ let make_router ~n ~l ~is_root (): router =
     Load 1; Eq (-1); BranchOf [|
 	  [ 
 		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
-	    PushA; Add; Store 1; LogMem;
+	    PushA; Add; Store 1;
         Load 0; PopA; Load 1; Emit;		
 	  ];
       [ 
 	    Load 1; Emit; 
 	    Load 0; PushConst (-1); Add; Store 0;
-		Eq 0; BranchOf [|
+		Eq 1; BranchOf [|
 		  [ 
 		    PushConst count; Store 0;
 		    PushConst (-1); Store 1;
@@ -80,35 +78,6 @@ let make_router ~n ~l ~is_root (): router =
     |];
   ] in 
   
- (* let auth_data = b.add_handler [
-    Load 0; Eq (-1); BranchOf [|
-	    [ PushConst 0; Store 0; Halt];
-	|];
-    Load 1; Eq (-1); BranchOf [|
-	  [ 
-		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
-	    PushA; Add; Store 1;
-        Emit;		
-	  ];
-      [ 
-	    Load 0; PushConst 1; Add; Store 0; LogMem;
-	    Load 1; Emit; 
-	  ];
-    |];
-  ] in *)
-  
-    
-  let setup_reset = b.add_handler [
-    PushConst count;	Store 0;
-	PushConst (-1); Store 1;
-  ] in
-  
-  
-  let auth_reset = b.add_handler [
-    PushConst count;	Store 0;
-	PushConst (-1); Store 1;
-  ] in
-  
   (* OUTPUT PORTS - in declaration order *)
   let setup_out = Array.init n (fun _ -> b.add_out_port ()) in
   let auth_out = Array.init n (fun _ -> b.add_out_port ()) in
@@ -117,8 +86,6 @@ let make_router ~n ~l ~is_root (): router =
   let input = {
     setup_data;
     auth_data;
-    setup_reset;
-    auth_reset;
   } in
   
   let output = {

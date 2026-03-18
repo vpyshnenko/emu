@@ -15,6 +15,9 @@ let make
   : t
   =
   { initial_snapshot; final_snapshot; history = Snoc.to_list history }
+  
+let empty (snap: Snapshot.t): t = 
+  { initial_snapshot = snap; final_snapshot = snap; history = [] }
 
 let total_steps (d : t) : int =
   List.length d.history

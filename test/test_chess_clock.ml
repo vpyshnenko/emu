@@ -173,7 +173,7 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   (* Run simulation                                               *)
   (* ------------------------------------------------------------ *)
-  let init_snap = Runtime.create ~lifespan:100 net in
+  let init_snap = Runtime.create net in
   
   let stop_when snap =
     let a = Net.get_node snap.net idA in

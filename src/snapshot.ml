@@ -27,5 +27,3 @@ let with_net snap net =
 let with_queue queue snap =
   { snap with queue }
 
-let with_lifetime lifetime snap =
-  { snap with lifetime }

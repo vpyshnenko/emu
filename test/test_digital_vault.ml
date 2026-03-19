@@ -254,7 +254,7 @@ let test_digital_vault _ctx =
   (* Run simulation                                               *)
   (* ------------------------------------------------------------ *)
 
-let init_snap = Runtime.create ~lifespan:1000 net in
+let init_snap = Runtime.create net in
 
   (* ------------------------------------------------------------ *)
   (* Schedule                                                     *)

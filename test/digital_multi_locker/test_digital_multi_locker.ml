@@ -13,7 +13,7 @@ let test_digital_multi_locker _ctx =
   Printf.printf "Number of leaves: %d\n" (Array.length leaves);
 
   (* Create initial snapshot *)
-  let init_snap = Emu.Runtime.create ~lifespan:1000 net in
+  let init_snap = Emu.Runtime.create net in
   let root_router = routers.(0).(0) in
   
   (* Check initial state *)

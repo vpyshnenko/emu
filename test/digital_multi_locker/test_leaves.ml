@@ -34,7 +34,7 @@ let tap_assert_leaf_on_auth ~(leaves: Leaf.leaf array) ~leaf_idx digest =
 	
   assert_equal [0; 0] leaf_state;
   
-  (* assert_equal [1] out_stream; *)
+  assert_equal [1] out_stream;
   
   digest  
 
@@ -53,7 +53,7 @@ let test_setup_password _ctx =
   Printf.printf "Number of leaves: %d\n" (Array.length leaves);
 
   (* Create initial snapshot *)
-  let init_snap = Emu.Runtime.create ~lifespan:1000 net in
+  let init_snap = Emu.Runtime.create net in
   
   let leaf_index p = List.fold_left (fun acc d -> acc * n + d) 0 p in
   
@@ -87,7 +87,7 @@ let test_auth_password _ctx =
   Printf.printf "Number of leaves: %d\n" (Array.length leaves);
 
   (* Create initial snapshot *)
-  let init_snap = Emu.Runtime.create ~lifespan:1000 net in
+  let init_snap = Emu.Runtime.create net in
   
   let leaf_index p = List.fold_left (fun acc d -> acc * n + d) 0 p in
   

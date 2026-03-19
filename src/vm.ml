@@ -164,15 +164,6 @@ let eval_normal
         st
       )
 
-  | EmitIfNonZero idx ->
-      let cond = peek st in
-      if cond <> 0 then (
-        if idx < 0 || idx >= out_port_count then
-          failwith "VM: EmitIfNonZero index out of bounds"
-        else emit idx
-      );
-      st
-
   (* --- Control instructions should not reach here --- *)
   | Halt
   | Shutdown

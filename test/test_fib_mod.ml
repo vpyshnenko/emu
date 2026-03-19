@@ -121,7 +121,7 @@ let test_fibonacci_mod_network _ctx =
   (* Run simulation                                               *)
   (* ------------------------------------------------------------ *)
 
-let init_snap = Runtime.create ~lifespan:30 net in
+let init_snap = Runtime.create net in
 
 (* One avalanche triggered by sending payload=1 to node B *)
 let schedule = [

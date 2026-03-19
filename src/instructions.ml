@@ -32,9 +32,6 @@ type instr =
   | Emit                  (* send regA content to port defined by top of stack *)
   | EmitTo of int         (* send regA content to port by index *)
 
-  (* Conditional emission *)
-  | EmitIfNonZero of int  (* same, but only if top-of-stack ≠ 0 *)
-
   (* Control flow *)
   | Halt (* early return *)
   | Shutdown (* exclude curent node from further network evaluation *)

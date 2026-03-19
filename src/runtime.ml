@@ -16,21 +16,17 @@ type event = {
 (* Create initial snapshot                                       *)
 (* ------------------------------------------------------------- *)
 
-let create ?(lifespan = 100) net =
-  Snapshot.make ~lifetime:lifespan ~net ()
+let create net =
+  Snapshot.make ~net ()
 
 (* ------------------------------------------------------------- *)
 (* Enqueue                                                       *)
 (* ------------------------------------------------------------- *)
 
 let enqueue (ev : event) (snap : Snapshot.t) : Snapshot.t =
-  (* if snap.lifetime <= 0 then *)
-    (* failwith "runtime: lifetime exceeded (immortal activity detected)"; *)
-
   let queue = Queue.enqueue (ev.src, ev.out_port, ev.payload) snap.queue in
   snap
   |> Snapshot.with_queue queue
-  |> Snapshot.with_lifetime (snap.lifetime - 1)
 
 (* ------------------------------------------------------------- *)
 (* Deliver an event                                              *)
@@ -105,13 +101,22 @@ let make_step = step
 (* Avalanche: run until queue is empty                           *)
 (* ------------------------------------------------------------- *)
 
-let rec run_avalanche ~(history : Step.t Snoc.t) (snap : Snapshot.t)
+let run_avalanche 
+    ~(history : Step.t Snoc.t) 
+    ?(max_steps = 100)  (* Maximum steps allowed in this avalanche *)
+    (snap : Snapshot.t)
   : Snapshot.t
   =
-  match make_step ~history snap with
-  | None -> snap
-  | Some (snap', _steps) ->
-      run_avalanche ~history snap'
+  let rec loop steps_remaining snap =
+    if steps_remaining <= 0 then
+      failwith "AVALANCHE: Maximum steps exceeded - possible infinite loop";
+    
+    match make_step ~history snap with
+    | None -> snap
+    | Some (snap', _steps) ->
+        loop (steps_remaining - 1) snap'
+  in
+  loop max_steps snap
 
 (* ------------------------------------------------------------- *)
 (* Run a sequence of avalanches                                  *)

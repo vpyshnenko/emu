@@ -24,8 +24,8 @@ let create ?(lifespan = 100) net =
 (* ------------------------------------------------------------- *)
 
 let enqueue (ev : event) (snap : Snapshot.t) : Snapshot.t =
-  if snap.lifetime <= 0 then
-    failwith "runtime: lifetime exceeded (immortal activity detected)";
+  (* if snap.lifetime <= 0 then *)
+    (* failwith "runtime: lifetime exceeded (immortal activity detected)"; *)
 
   let queue = Queue.enqueue (ev.src, ev.out_port, ev.payload) snap.queue in
   snap

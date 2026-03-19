@@ -62,10 +62,13 @@ let make_router ~n ~l ~is_root (): router =
 	  [ 
 		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
 	    PushA; Add; Store 1;
-        Load 0; PopA; Load 1; Emit;		
+		(* Load 0; Gt 1; BranchOf [| *)
+		 (* [ PopA; Load 1; Emit;] *)
+        (* |]	 *)
+        Load 0; PopA; Load 1; Emit;
 	  ];
       [ 
-	    Load 1; Emit; 
+	    Load 1; Emit;
 	    Load 0; PushConst (-1); Add; Store 0;
 		Eq 1; BranchOf [|
 		  [ 

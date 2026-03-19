@@ -42,11 +42,22 @@ let node_in_stream_on_port ~node_id ~in_port (d : t) : int list =
   d.history
   |> List.filter (Step.matches_input ~node_id ~in_port)
   |> List.map Step.payload
+  
+let node_in_stream_on_port_src ~node_id ~in_port (d : t) : int list =
+  d.history
+  |> List.filter (Step.matches_input ~node_id ~in_port)
+  |> List.map Step.src
 
 let node_in_stream ~node_id (d : t) : int list =
   d.history
   |> List.filter (Step.matches_in ~node_id)
   |> List.map Step.payload
+
+let print_in_stream ~label node_id (d: t) : unit = 
+  d.history
+  |> List.filter (Step.is_for_node ~node_id)
+  |> List.iteri (fun _ (ev: Step.t) ->
+        Printf.printf "%s: (src=%d; in_port=%d; val=%d)\n" label ev.src_node ev.in_port ev.payload)
 
 (* ------------------------------------------------------------- *)
 (* Output stream (all outgoing ports)                            *)
@@ -58,6 +69,16 @@ let node_out_stream ~node_id (d : t) : int list =
   |> List.map Step.emitted
   |> List.flatten
   |> List.map snd
+  
+let print_out_stream ~label node_id (d: t) : unit = 
+  d.history
+  |> List.filter (Step.is_for_node ~node_id)
+  |> List.map Step.emitted
+  |> List.flatten
+  |> List.iteri (fun _ (out_port_id, value) ->
+        Printf.printf "%s: (out_port=%d; val=%d)\n" label out_port_id value)
+
+  
 
 (* ------------------------------------------------------------- *)
 (* Output stream for a specific outgoing port                    *)

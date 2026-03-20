@@ -10,16 +10,16 @@ let get_out_stream node_id port_id digest =
 let get_in_stream node_id port_id digest = 
   Emu.Digest.node_in_stream_on_port_src ~node_id:node_id ~in_port: port_id digest
   
-let setup_messages ~ext ~password ~value = 
-  let digit_messages = List.map (fun digit ->
+let digit_messages ~ext ~password = 
+  List.map (fun digit ->
       { src = ext.id; out_port = ext.output.setup_data; payload = digit }
-    ) password in
-    
-    (* Create final message with the value *)
-  let value_message = 
-      { src = ext.id; out_port = ext.output.setup_data; payload = value }
-  in
-  digit_messages @ [value_message]
+    ) password
+	
+let value_message ~ext ~value = 
+  { src = ext.id; out_port = ext.output.setup_data; payload = value }
+
+let setup_messages ~ext ~password ~value = 
+  (digit_messages ~ext ~password) @ [value_message ~ext ~value]
   
 let auth_messages ~ext ~password = 
   List.map (fun digit ->

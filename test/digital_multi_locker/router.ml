@@ -42,14 +42,14 @@ let make_router ~n ~l ~is_root (): router =
 	  ];
       [ Load 1; Emit; 
 	  	Load 0; PushConst (-1); Add; Store 0;
-		Eq 0; BranchOf [|
-		  [ 
-		    PushConst count; Store 0;
-		    PushConst (-1); Store 1;
-		  ]
-		|]
 	  ]
     |];
+	Load 0; Eq 0; BranchOf [|
+	  [ 
+	    PushConst count; Store 0;
+	    PushConst (-1); Store 1;
+	  ]
+	|]
   ] in
   
 
@@ -62,9 +62,6 @@ let make_router ~n ~l ~is_root (): router =
 	  [ 
 		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
 	    PushA; Add; Store 1;
-		(* Load 0; Gt 1; BranchOf [| *)
-		 (* [ PopA; Load 1; Emit;] *)
-        (* |]	 *)
         Load 0; PopA; Load 1; Emit;
 	  ];
       [ 
@@ -78,8 +75,6 @@ let make_router ~n ~l ~is_root (): router =
 	    PushConst (-1); Store 1;
 	  ]
 	|]
-		
-
   ] in 
   
   (* OUTPUT PORTS - in declaration order *)

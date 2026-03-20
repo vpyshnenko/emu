@@ -236,27 +236,27 @@ let stress_test _ctx =
   (* Define a sequence of operations *)
   let operations = [
     (* Setup leaf0 with value 100 *)
-    ("setup", [0;0;0;0], 100, leaf0);
+    ("setup", [0;0;0;0], 100);
     (* Auth leaf0 - should emit 100 *)
-    ("auth", [0;0;0;0], 100, leaf0);
+    ("auth", [0;0;0;0], 100);
     (* Setup leaf1 with value 200 *)
-    ("setup", [0;0;0;1], 200, leaf1);
+    ("setup", [0;0;0;1], 200);
     (* Auth leaf1 - should emit 200 *)
-    ("auth", [0;0;0;1], 200, leaf1);
+    ("auth", [0;0;0;1], 200);
     (* Setup leaf2 with value 300 *)
-    ("setup", [0;0;0;2], 300, leaf2);
+    ("setup", [0;0;0;2], 300);
     (* Auth leaf2 - should emit 300 *)
-    ("auth", [0;0;0;2], 300, leaf2);
+    ("auth", [0;0;0;2], 300);
     (* Auth leaf0 again - should emit 100 again *)
-    ("auth", [0;0;0;0], 100, leaf0);
+    ("auth", [0;0;0;0], 100);
     (* Auth leaf1 again - should emit 200 again *)
-    ("auth", [0;0;0;1], 200, leaf1); 
+    ("auth", [0;0;0;1], 200); 
   ] in
   
  
   (* Create schedule from operations *)
   let schedule = 
-    List.fold_left (fun acc (op, password, value, _) ->
+    List.fold_left (fun acc (op, password, value) ->
       match op with
       | "setup" ->
           acc @ setup_messages ~ext ~password ~value
@@ -305,10 +305,62 @@ let stress_test _ctx =
   assert_equal [1;200] leaf1_final;
   assert_equal [1;300] leaf2_final;
   
+  let diff = Emu.Tool.distinct_states init_snap.net digest.final_snapshot.net in
+  Emu.Tool.print_state_diff diff;
+  
+  
   Printf.printf "\n✓ Stress test passed: %d operations processed in one avalanche!\n" 
     (List.length operations);
   () 
+ 
+let test_setup_tunnel _ctx =
+  let l = 4 in
+  let n = 5 in
   
+  let { Net.net; ext; _ } = Net.make_net ~n ~l () in
+  let init_snap = Emu.Runtime.create net in
+  let prev_net = ref init_snap.net in
+  let _ =
+    init_snap
+    |> Emu.Runtime.run ~schedule:(digit_messages ~ext ~password:[0;0;0;0])
+    |> tap (fun (d: Emu.Digest.t) -> 
+         let diff = Emu.Tool.distinct_states init_snap.net d.final_snapshot.net in
+		 Printf.printf "\n===Setup tunnel - built===\n";
+         Emu.Tool.print_state_diff diff;
+         (* Assert every changed node has expected state *)
+         IntMap.iter (fun _ (_, final_state) ->
+           assert (final_state = [1; 0]) (* tunnel before destroy state in setup phase *)
+         ) diff.changed
+       )
+    |> (fun (d: Emu.Digest.t) -> 
+	     Emu.Runtime.run ~schedule:[value_message ~ext ~value:42] d.final_snapshot
+		)
+    |> tap (fun (d: Emu.Digest.t) -> 
+         let diff = Emu.Tool.distinct_states init_snap.net d.final_snapshot.net in
+		 Printf.printf "\n===Setup tunnel - destroyed===\n";
+         Emu.Tool.print_state_diff diff;
+		 prev_net := d.final_snapshot.net
+       )
+	|> (fun (d: Emu.Digest.t) -> (* first three auth digits extend the tunnel *)
+	     Emu.Runtime.run ~schedule:(auth_messages ~ext ~password:[0;0;0;]) d.final_snapshot
+		)
+    |> tap (fun (d: Emu.Digest.t) -> 
+         let diff = Emu.Tool.distinct_states init_snap.net d.final_snapshot.net in
+		 Printf.printf "\n===Auth tunnel - built===\n";
+         Emu.Tool.print_state_diff diff;
+       )
+	|> (fun (d: Emu.Digest.t) -> (* Last auth digit destroys the tunnel *)
+	     Emu.Runtime.run ~schedule:(auth_messages ~ext ~password:[0]) d.final_snapshot
+		)
+    |> tap (fun (d: Emu.Digest.t) -> (* state should be the same as before auth process started *)
+         let diff = Emu.Tool.distinct_states init_snap.net d.final_snapshot.net in
+		 Printf.printf "\n===Auth tunnel - destroyed===\n";
+         Emu.Tool.print_state_diff diff;
+		 assert_equal true (Emu.Tool.are_identical !prev_net d.final_snapshot.net)
+       )
+	   
+  in 
+  ()
 
 let suite =
   "digital locker tests" >::: [
@@ -317,7 +369,7 @@ let suite =
     "test setup password states" >:: test_setup_password_states;
     "test setup and auth password states" >:: test_setup_and_auth_states;
     "stress_test" >:: stress_test;
-	
+    "test setup tunnel" >:: test_setup_tunnel;
   ]
 
 let () = run_test_tt_main suite

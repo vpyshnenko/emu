@@ -94,7 +94,7 @@ let test_auth_password _ctx =
   (* Process passwords lazily using Seq.fold_left *)
   let _ =
     password_seq ~n ~l
-    |> Seq.take 10  (* Only take first 4 passwords *)
+    |> Seq.take 30  (* Only take first 4 passwords *)
     |> Seq.fold_left (fun digest password ->
          let leaf_idx = leaf_index password in
          

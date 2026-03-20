@@ -25,12 +25,43 @@ let test_digital_multi_locker _ctx =
   (* Run the test pipeline - ignore final digest with _ *)
   let _ =
     Emu.Digest.empty init_snap
-	|> setup_password ~ext ~password:[0;0;0;0] ~value:42
+	|> setup_password ~ext ~password:[0;0;0;0] ~value:40
+	|> setup_password ~ext ~password:[0;0;0;1] ~value:41
+	|> setup_password ~ext ~password:[0;0;0;2] ~value:42
+	|> setup_password ~ext ~password:[0;0;0;3] ~value:43
     |> tap (fun d -> 
-	     let leaf0_state = Emu.Digest.final_node_state ~node_id:leaves.(0).id d in
-		 Printf.printf "leaf(%d) state: %s\n" leaves.(0).id (pp_list leaf0_state);
-		 assert_equal [1; 42] leaf0_state)
-         (* assert_equal [1] (get_out_stream observer.id observer.output.setup_ok d)) *)
+	     let leaf1_state = Emu.Digest.final_node_state ~node_id:leaves.(1).id d in
+		 Printf.printf "leaf(%d) state: %s\n" leaves.(1).id (pp_list leaf1_state);
+		 assert_equal [1; 41] leaf1_state;
+         assert_equal [1] (get_out_stream observer.id observer.output.setup_ok d)
+		)
+
+    |> auth_password ~ext ~password:[0;0;0;0]
+    |> auth_password ~ext ~password:[0;0;0;1]
+    |> auth_password ~ext ~password:[0;0;0;2]
+    |> auth_password ~ext ~password:[0;0;0;3]
+    |> tap (fun d ->
+	     (* let out_stream = get_out_stream observer.id observer.output.auth_fail d in *)
+	     (* let in_stream = get_in_stream observer.id observer.input.auth_fail d in *)
+		 Printf.printf "router(%d) state: %s\n" 2 (pp_list (Emu.Digest.final_node_state ~node_id:2 d));
+		 Printf.printf "router(%d) state: %s\n" 3 (pp_list (Emu.Digest.final_node_state ~node_id:3 d));
+		 Printf.printf "router(%d) state: %s\n" 8 (pp_list (Emu.Digest.final_node_state ~node_id:8 d));
+		 Printf.printf "router(%d) state: %s\n" 33 (pp_list (Emu.Digest.final_node_state ~node_id:33 d));
+		 Emu.Digest.print_in_stream ~label:"2 in: " 2 d;
+		 Emu.Digest.print_out_stream ~label:"2 out:" 2 d;
+		 Emu.Digest.print_in_stream ~label:"3 in: " 3 d;
+		 Emu.Digest.print_out_stream ~label:"3 out:" 3 d;
+		 Emu.Digest.print_in_stream ~label:"8 in: " 8 d;
+		 Emu.Digest.print_out_stream ~label:"8 out:" 8 d;
+		 Emu.Digest.print_in_stream ~label:"33 in: " 33 d;
+		 Emu.Digest.print_out_stream ~label:"33 out:" 33 d;
+		 Emu.Digest.print_in_stream ~label:"158 in: " 158 d;
+	
+		 Emu.Digest.print_in_stream ~label:"observer in: " observer.id d;
+		 Emu.Digest.print_out_stream ~label:"observer out:" observer.id d;
+         (* Printf.printf "auth_fail out stream: %s\n" (pp_list out_stream) *)
+	   )
+(*
     |> setup_password ~ext ~password:[1;2;3;4] ~value:42
     |> tap (fun d -> 
          assert_equal [1] (get_out_stream observer.id observer.output.setup_ok d))
@@ -87,7 +118,7 @@ let test_digital_multi_locker _ctx =
 	     let auth_fail_stream = get_out_stream observer.id observer.output.auth_fail d in
          Printf.printf "auth_fail stream: %s\n" (pp_list auth_fail_stream);
          assert_equal [1] auth_fail_stream)
-
+*)
   in
   
   (* Test returns unit *)

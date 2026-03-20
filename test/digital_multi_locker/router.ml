@@ -70,15 +70,16 @@ let make_router ~n ~l ~is_root (): router =
       [ 
 	    Load 1; Emit;
 	    Load 0; PushConst (-1); Add; Store 0;
-		Eq 1; BranchOf [|
-		  [ 
-		    PushConst count; Store 0;
-		    PushConst (-1); Store 1;
-		  ]
-		|]
+	  ]
+	|];
+	Load 0; Eq 1; BranchOf [|
+	  [ 
+	    PushConst count; Store 0;
+	    PushConst (-1); Store 1;
+	  ]
+	|]
 		
-	  ];
-    |];
+
   ] in 
   
   (* OUTPUT PORTS - in declaration order *)

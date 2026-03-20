@@ -46,7 +46,7 @@ let node_in_stream_on_port ~node_id ~in_port (d : t) : int list =
 let node_in_stream_on_port_src ~node_id ~in_port (d : t) : int list =
   d.history
   |> List.filter (Step.matches_input ~node_id ~in_port)
-  |> List.map Step.src
+  |> List.map Step.payload
 
 let node_in_stream ~node_id (d : t) : int list =
   d.history

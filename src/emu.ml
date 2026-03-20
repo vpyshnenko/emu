@@ -13,4 +13,5 @@ module Snoc = Snoc
 module Stack = Stack
 module State = State
 module Step = Step
+module Tool = Tool
 module Vm = Vm

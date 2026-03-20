@@ -1,6 +1,6 @@
 (library
  (name emu)
  (public_name emu)
- (modules emu builder digest dlist instructions meta net node queue runtime
+ (modules emu tool builder digest dlist instructions meta net node queue runtime
           snapshot snoc stack state step vm)
 )

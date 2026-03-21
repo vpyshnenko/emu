@@ -370,6 +370,7 @@ let suite =
     "test setup and auth password states" >:: test_setup_and_auth_states;
     "stress_test" >:: stress_test;
     "test setup tunnel" >:: test_setup_tunnel;
+    (* "test sending digit > N on setup phase redirect it to auth out_port " >:: corrupt tunnel; *)
   ]
 
 let () = run_test_tt_main suite

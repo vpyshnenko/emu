@@ -3,22 +3,19 @@
 type t = {
   net : Net.t;
   queue : (int * int * int) Queue.t;
-  lifetime : int;
 }
 
 let empty =
   {
     net = Net.create ();
     queue = Queue.empty;
-    lifetime = 0;
   }
 
 
-let make ?(lifetime = 100) ~net () =
+let make ~net () =
   {
     net;
     queue = Queue.empty;
-    lifetime;
   }
 
 let with_net snap net =

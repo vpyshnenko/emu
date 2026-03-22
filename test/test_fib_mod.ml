@@ -56,7 +56,7 @@ let test_fibonacci_mod_network _ctx =
   (* ------------------------------------------------------------ *)
   (* Node A                                                       *)
   (* ------------------------------------------------------------ *)
-  let bA = Builder.Node.create ~state:[0; ceil] ~vm in
+  let bA = Builder.Node.create ~state:[0; ceil] ~vm () in
   let inA = bA.add_handler addmod_prog in
   let outA = bA.add_out_port () in          (* actual ID *)
   let outA_overflow = bA.add_out_port () in (* actual ID *)
@@ -65,7 +65,7 @@ let test_fibonacci_mod_network _ctx =
   (* ------------------------------------------------------------ *)
   (* Node B                                                       *)
   (* ------------------------------------------------------------ *)
-  let bB = Builder.Node.create ~state:[0; ceil] ~vm in
+  let bB = Builder.Node.create ~state:[0; ceil] ~vm () in
   let inB = bB.add_handler addmod_prog in
   let outB = bB.add_out_port () in
   let outB_overflow = bB.add_out_port () in
@@ -77,7 +77,7 @@ let test_fibonacci_mod_network _ctx =
   let limit = 10 in
   let vm = make_vm ~mem_size:1 () in
   
-  let bC = Builder.Node.create ~state:[limit] ~vm in
+  let bC = Builder.Node.create ~state:[limit] ~vm () in
 
   (* Node C has 3 outgoing ports: default, ch1_out, ch2_out *)
   let outC = bC.add_out_port () in
@@ -101,19 +101,19 @@ let test_fibonacci_mod_network _ctx =
   (* ------------------------------------------------------------ *)
   let nb, ( --> ) = Builder.Net.create () in
 
-  let idA = nb.add_node nodeA in
-  let idB = nb.add_node nodeB in
-  let idC = nb.add_node nodeC in
+  nb.add_node nodeA;
+  nb.add_node nodeB;
+  nb.add_node nodeC;
 
   (* Wiring using actual port IDs *)
-  (idA, outA) --> (idC, inC_ch1);
-  (idC, outC_ch1) --> (idB, inB);
-  (idB, outB) --> (idC, inC_ch2);
-  (idC, outC_ch2) --> (idA, inA);
+  (nodeA.id, outA) --> (nodeC.id, inC_ch1);
+  (nodeC.id, outC_ch1) --> (nodeB.id, inB);
+  (nodeB.id, outB) --> (nodeC.id, inC_ch2);
+  (nodeC.id, outC_ch2) --> (nodeA.id, inA);
 
   (* Overflow wiring *)
-  (idB, outB_overflow) --> (idC, inC_overflow);
-  (idA, outA_overflow) --> (idC, inC_overflow);
+  (nodeB.id, outB_overflow) --> (nodeC.id, inC_overflow);
+  (nodeA.id, outA_overflow) --> (nodeC.id, inC_overflow);
 
   let net = nb.finalize () in
 
@@ -125,7 +125,7 @@ let init_snap = Runtime.create net in
 
 (* One avalanche triggered by sending payload=1 to node B *)
 let schedule = [
-  { Runtime.src = idC; out_port = outC_ch1; payload = 1 };
+  { Runtime.src = nodeC.id; out_port = outC_ch1; payload = 1 };
 ] in
 
 let digest =
@@ -133,7 +133,7 @@ let digest =
 in
 
 let res_stream =
-  Digest.node_out_stream_on_port ~node_id:idC ~out_port:outC digest
+  Digest.node_out_stream_on_port ~node_id:nodeC.id ~out_port:outC digest
 in
 
 Printf.printf "Total steps: %d\n" (Digest.total_steps digest);

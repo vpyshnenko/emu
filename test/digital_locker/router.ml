@@ -27,7 +27,7 @@ type router = {
 let _make_router ~n ~is_root () : router =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
   let initial_state = if is_root then [1;1] else [0;0] in
-  let b = Builder.Node.create ~state:initial_state ~vm in
+  let b = Builder.Node.create ~state:initial_state ~vm () in
   
   let setup_token = b.add_handler [
     PushConst 1;

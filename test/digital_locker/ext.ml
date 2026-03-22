@@ -18,7 +18,7 @@ type ext = {
 
 let make_ext () : ext =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:0 in
-  let b = Builder.Node.create ~state:[] ~vm in
+  let b = Builder.Node.create ~state:[] ~vm () in
   
   let output = {
       setup_data = b.add_out_port ();

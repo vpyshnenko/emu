@@ -23,7 +23,7 @@ type payload = {
 let make_payload () : payload =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:1 in
   let initial_state = [0] in  (* Payload starts as 0 *)
-  let b = Builder.Node.create ~state:initial_state ~vm in
+  let b = Builder.Node.create ~state:initial_state ~vm () in
   
   (* INPUT PORTS - in declaration order *)
   let set = b.add_handler [

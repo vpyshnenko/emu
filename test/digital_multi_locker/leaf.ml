@@ -22,10 +22,10 @@ type leaf = {
   output : leaf_output;
 }
 
-let make_leaf () : leaf =
+let make_leaf ~id : leaf =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
   let initial_state = [0;0] in 
-  let b = Builder.Node.create ~state:initial_state ~vm in
+  let b = Builder.Node.create ~state:initial_state ~vm ~id () in
   
   (* INPUT PORTS - in declaration order *)
   let setup = b.add_handler [

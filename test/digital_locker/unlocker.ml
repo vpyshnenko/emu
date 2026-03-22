@@ -19,7 +19,7 @@ type unlocker = {
 
 let make_unlocker ~n () : unlocker =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:0 in
-  let b = Builder.Node.create ~state:[] ~vm in
+  let b = Builder.Node.create ~state:[] ~vm () in
   
   (* Create N input ports, one per leaf *)
   let auth_ok_inputs = Array.init n (fun _ ->

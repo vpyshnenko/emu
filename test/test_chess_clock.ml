@@ -24,14 +24,14 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   (* Node: gen (tick source)                                     *)
   (* ------------------------------------------------------------ *)
-  let bGen = Builder.Node.create ~state:[] ~vm in
+  let bGen = Builder.Node.create ~state:[] ~vm () in
   let outGen = bGen.add_out_port () in
   let nodeGen = bGen.finalize () in
 
   (* ------------------------------------------------------------ *)
   (* Node: switch (pulse source)                                 *)
   (* ------------------------------------------------------------ *)
-  let bSw = Builder.Node.create ~state:[] ~vm in
+  let bSw = Builder.Node.create ~state:[] ~vm () in
   let outSw = bSw.add_out_port () in
   let nodeSw = bSw.finalize () in
 
@@ -41,7 +41,7 @@ let test_chess_clock _ctx =
   (* 0: curent active out port index                              *)
   (* 1: out ports count (ceil)                                    *)
   (* ------------------------------------------------------------ *)
-  let bRouter = Builder.Node.create ~state:[0] ~vm in
+  let bRouter = Builder.Node.create ~state:[0] ~vm () in
 
   (* Incoming ports: 1 = tick, 2 = switch pulse *)
   let inTick =
@@ -69,7 +69,7 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   (* Node: counterA                                               *)
   (* ------------------------------------------------------------ *)
-  let bA = Builder.Node.create ~state:[5] ~vm in
+  let bA = Builder.Node.create ~state:[5] ~vm () in
 
   let inA =
     bA.add_handler [
@@ -88,7 +88,7 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   (* Node: counterB                                               *)
   (* ------------------------------------------------------------ *)
-  let bB = Builder.Node.create ~state:[5] ~vm in
+  let bB = Builder.Node.create ~state:[5] ~vm () in
 
   let inB =
     bB.add_handler [
@@ -109,7 +109,7 @@ let test_chess_clock _ctx =
   (* Keeps [a_count; b_count] and emits pair on every update      *)
   (* ------------------------------------------------------------ *)
   let vm_obs = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:2 in
-  let bObs = Builder.Node.create ~state:[5; 5] ~vm:vm_obs in
+  let bObs = Builder.Node.create ~state:[5; 5] ~vm:vm_obs () in
   
   let handle i = [
       PushA; Store i;          (* update node's state *)
@@ -129,27 +129,27 @@ let test_chess_clock _ctx =
   (* ------------------------------------------------------------ *)
   let nb, ( --> ) = Builder.Net.create () in
 
-  let idGen = nb.add_node nodeGen in
-  let idSw  = nb.add_node nodeSw in
-  let idRouter   = nb.add_node nodeRouter in
-  let idA   = nb.add_node nodeA in
-  let idB   = nb.add_node nodeB in
-  let idObs = nb.add_node nodeObs in
+  nb.add_node nodeGen;
+  nb.add_node nodeSw;
+  nb.add_node nodeRouter;
+  nb.add_node nodeA;
+  nb.add_node nodeB;
+  nb.add_node nodeObs;
 
 
   (* gen → router.tick *)
-  (idGen, outGen) --> (idRouter, inTick);
+  (nodeGen.id, outGen) --> (nodeRouter.id, inTick);
 
   (* switch → router.pulse *)
-  (idSw, outSw) --> (idRouter, inPulse);
+  (nodeSw.id, outSw) --> (nodeRouter.id, inPulse);
 
   (* router → counters *)
-  (idRouter, outA) --> (idA, inA);
-  (idRouter, outB) --> (idB, inB);
+  (nodeRouter.id, outA) --> (nodeA.id, inA);
+  (nodeRouter.id, outB) --> (nodeB.id, inB);
   
   (* counters  →  observer *)
-  (idA, outA_count) --> (idObs, inA_obs);
-  (idB, outB_count) --> (idObs, inB_obs);
+  (nodeA.id, outA_count) --> (nodeObs.id, inA_obs);
+  (nodeB.id, outB_count) --> (nodeObs.id, inB_obs);
 
 
   let net = nb.finalize () in
@@ -158,16 +158,16 @@ let test_chess_clock _ctx =
   (* Schedule                                                     *)
   (* ------------------------------------------------------------ *)
   let schedule = [
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idSw;  out_port = outSw;  payload = 1 }; (* switch to B *)
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idSw;  out_port = outSw;  payload = 1 }; (* switch to A *)
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
-    { Runtime.src = idGen; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeSw.id;  out_port = outSw;  payload = 1 }; (* switch to B *)
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeSw.id;  out_port = outSw;  payload = 1 }; (* switch to A *)
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
   ] in
 
   (* ------------------------------------------------------------ *)
@@ -176,8 +176,8 @@ let test_chess_clock _ctx =
   let init_snap = Runtime.create net in
   
   let stop_when snap =
-    let a = Net.get_node snap.net idA in
-    let b = Net.get_node snap.net idB in
+    let a = Net.get_node snap.net nodeA.id in
+    let b = Net.get_node snap.net nodeB.id in
     let a_count = List.hd a.state in
     let b_count = List.hd b.state in
     a_count <= 0 || b_count <= 0
@@ -191,15 +191,15 @@ let test_chess_clock _ctx =
   in
 
   let streamA =
-    Digest.node_out_stream_on_port ~node_id:idA ~out_port:outA_count digest
+    Digest.node_out_stream_on_port ~node_id:nodeA.id ~out_port:outA_count digest
   in
 
   let streamB =
-    Digest.node_out_stream_on_port ~node_id:idB ~out_port:outB_count digest
+    Digest.node_out_stream_on_port ~node_id:nodeB.id ~out_port:outB_count digest
   in
   
   let streamObs =
-    Digest.node_out_stream_on_port ~node_id:idObs ~out_port:outObs digest
+    Digest.node_out_stream_on_port ~node_id:nodeObs.id ~out_port:outObs digest
   in
   
   let obs_pairs = pairs streamObs in

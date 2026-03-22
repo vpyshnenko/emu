@@ -20,12 +20,12 @@ type router = {
   output : router_output;
 }
 
-let make_router ~n ~l ~is_root (): router =
+let make_router ~id ~n ~l ~is_root (): router =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
   let count = if is_root then l else (-1) in
   
   let initial_state = if is_root then [count; -1] else [-1;-1] in
-  let b = Builder.Node.create ~state:initial_state ~vm in
+  let b = Builder.Node.create ~state:initial_state ~vm ~id () in
   
   
   

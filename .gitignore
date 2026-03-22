@@ -64,3 +64,5 @@ Thumbs.db
 # ------------------------------------------------------------
 test-output/
 
+concatenated_modules.ml
+

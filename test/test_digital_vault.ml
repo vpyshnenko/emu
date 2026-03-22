@@ -17,7 +17,7 @@ let test_digital_vault _ctx =
 
  
   
-    let bRouter = Builder.Node.create ~state:[1;1] ~vm in
+    let bRouter = Builder.Node.create ~state:[1;1] ~vm () in
     
     (* Ports *) (*
     let inSetupToken =
@@ -96,7 +96,7 @@ let test_digital_vault _ctx =
   
   (* ======= Leaf Node============*)
   let makeLeaf () = 
-    let bLeaf = Builder.Node.create ~state:[0] ~vm in
+    let bLeaf = Builder.Node.create ~state:[0] ~vm () in
   
     let inSetupToken =
       bLeaf.add_handler [
@@ -142,7 +142,7 @@ let test_digital_vault _ctx =
    
     
   (* ======= Payload Node============*)
-  let bPayload = Builder.Node.create ~state:[0] ~vm in
+  let bPayload = Builder.Node.create ~state:[0] ~vm () in
   let inPayload =
      bPayload.add_handler [
       PushA;
@@ -169,7 +169,7 @@ let test_digital_vault _ctx =
   let nodePayload = bPayload.finalize () in
   
   (* ======= Observer Node============*)
-  let bObs = Builder.Node.create ~state:[] ~vm in
+  let bObs = Builder.Node.create ~state:[] ~vm () in
   
   let inSetupOk =
      bObs.add_handler [
@@ -195,7 +195,7 @@ let test_digital_vault _ctx =
   
   (* ======= Ext Node============*)
   
-  let bExt = Builder.Node.create ~state:[] ~vm in
+  let bExt = Builder.Node.create ~state:[] ~vm () in
   
   let out_setup_digit = bExt.add_out_port () in
   let out_auth_digit = bExt.add_out_port () in
@@ -211,42 +211,39 @@ let test_digital_vault _ctx =
   (* ------------------------------------------------------------ *)
   let nb, ( --> ) = Builder.Net.create () in
 
-  let idExt = nb.add_node nodeExt in
-  let idPayload = nb.add_node nodePayload in
-  
-  let idRouter  = nb.add_node nodeRouter in
-  
-  let idLeaf0  = nb.add_node nodeLeaf0 in
-  let idLeaf1  = nb.add_node nodeLeaf1 in
-  
-  let idObs = nb.add_node nodeObs in
+  nb.add_node nodeExt;
+  nb.add_node nodePayload;
+  nb.add_node nodeRouter;
+  nb.add_node nodeLeaf0;
+  nb.add_node nodeLeaf1;
+  nb.add_node nodeObs;
   
 
   
     (* Wiring using actual port IDs *)
-  (idExt, out_ext_payload) --> (idPayload, inPayload);
-  (idExt, out_clear) --> (idPayload, inClear);
-  (idLeaf0, out_auth_ok0) --> (idPayload, inUnlock);
-  (idLeaf1, out_auth_ok1) --> (idPayload, inUnlock);
+  (nodeExt.id, out_ext_payload) --> (nodePayload.id, inPayload);
+  (nodeExt.id, out_clear) --> (nodePayload.id, inClear);
+  (nodeLeaf0.id, out_auth_ok0) --> (nodePayload.id, inUnlock);
+  (nodeLeaf1.id, out_auth_ok1) --> (nodePayload.id, inUnlock);
   
-  (idExt, out_reset_setup) --> (idRouter, inResetSetup);
-  (idExt, out_reset_auth) --> (idRouter, inResetAuth);
-  (idExt, out_setup_digit) --> (idRouter, inSetupDigit);
-  (idExt, out_auth_digit) --> (idRouter, inAuthDigit);
+  (nodeExt.id, out_reset_setup) --> (nodeRouter.id, inResetSetup);
+  (nodeExt.id, out_reset_auth) --> (nodeRouter.id, inResetAuth);
+  (nodeExt.id, out_setup_digit) --> (nodeRouter.id, inSetupDigit);
+  (nodeExt.id, out_auth_digit) --> (nodeRouter.id, inAuthDigit);
   
-  (idRouter, out_setup0) --> (idLeaf0, inSetupToken0);
-  (idRouter, out_setup1) --> (idLeaf1, inSetupToken1);
+  (nodeRouter.id, out_setup0) --> (nodeLeaf0.id, inSetupToken0);
+  (nodeRouter.id, out_setup1) --> (nodeLeaf1.id, inSetupToken1);
   
-  (idRouter, out_auth0) --> (idLeaf0, inAuthToken0);
-  (idRouter, out_auth1) --> (idLeaf1, inAuthToken1);
+  (nodeRouter.id, out_auth0) --> (nodeLeaf0.id, inAuthToken0);
+  (nodeRouter.id, out_auth1) --> (nodeLeaf1.id, inAuthToken1);
   
-  (idExt, out_reset_setup) --> (idLeaf0, inResetSetup0);
-  (idExt, out_reset_setup) --> (idLeaf1, inResetSetup1);
+  (nodeExt.id, out_reset_setup) --> (nodeLeaf0.id, inResetSetup0);
+  (nodeExt.id, out_reset_setup) --> (nodeLeaf1.id, inResetSetup1);
   
-  (idLeaf0, out_auth_fail0) --> (idObs, inAuthFail);
-  (idLeaf1, out_auth_fail1) --> (idObs, inAuthFail);
-  (idLeaf0, out_setup_ok0) --> (idObs, inSetupOk);
-  (idLeaf1, out_setup_ok1) --> (idObs, inSetupOk);
+  (nodeLeaf0.id, out_auth_fail0) --> (nodeObs.id, inAuthFail);
+  (nodeLeaf1.id, out_auth_fail1) --> (nodeObs.id, inAuthFail);
+  (nodeLeaf0.id, out_setup_ok0) --> (nodeObs.id, inSetupOk);
+  (nodeLeaf1.id, out_setup_ok1) --> (nodeObs.id, inSetupOk);
   
   let net = nb.finalize () in
   
@@ -260,65 +257,65 @@ let init_snap = Runtime.create net in
   (* Schedule                                                     *)
   (* ------------------------------------------------------------ *)
   (*let schedule = [
-    { Runtime.src = idExt; out_port = out_reset_setup; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_reset_setup; payload = 1 };
 	
-    { Runtime.src = idExt; out_port = out_ext_payload; payload = 42 };
-    { Runtime.src = idExt; out_port = out_setup_digit; payload = 0 };
+    { Runtime.src = nodeExt.id; out_port = out_ext_payload; payload = 42 };
+    { Runtime.src = nodeExt.id; out_port = out_setup_digit; payload = 0 };
 	
     { Runtime.src = idEx; out_port = out_reset_auth; payload = 1 };
-    { Runtime.src = idExt; out_port = out_auth_digit; payload = 0 };
+    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = 0 };
 	
 	
-    { Runtime.src = idExt; out_port = out_reset_auth; payload = 1 };
-    { Runtime.src = idExt; out_port = out_auth_digit; payload = 1 };	
+    { Runtime.src = nodeExt.id; out_port = out_reset_auth; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = 1 };	
 	
   ] in *)
 
 let digest1 =
   Runtime.run init_snap ~schedule:[
-    { Runtime.src = idExt; out_port = out_ext_payload; payload = 42 };
-    { Runtime.src = idExt; out_port = out_setup_digit; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_ext_payload; payload = 42 };
+    { Runtime.src = nodeExt.id; out_port = out_setup_digit; payload = 1 };
 	
   ] 
 in
 
 let out_setup_ok_stream =
-  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_setup_ok digest1
+  Digest.node_out_stream_on_port ~node_id:nodeObs.id ~out_port:out_setup_ok digest1
 in
 
 assert_equal [1] out_setup_ok_stream;
 
 let digest2 =
   Runtime.run digest1.final_snapshot ~schedule:[
-    { Runtime.src = idExt; out_port = out_auth_digit; payload = 0 };
+    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = 0 };
   ] 
   
 in
 
 let out_auth_fail_stream =
-  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_auth_fail digest2
+  Digest.node_out_stream_on_port ~node_id:nodeObs.id ~out_port:out_auth_fail digest2
 in
 
 assert_equal [1] out_auth_fail_stream;
 
 let digest3 =
   Runtime.run digest2.final_snapshot ~schedule:[
-    { Runtime.src = idExt; out_port = out_reset_auth; payload = 1 };
-    { Runtime.src = idExt; out_port = out_auth_digit; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_reset_auth; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = 1 };
   ] 
   
 in
 
 let out_auth_fail_stream =
-  Digest.node_out_stream_on_port ~node_id:idObs ~out_port:out_auth_fail digest3
+  Digest.node_out_stream_on_port ~node_id:nodeObs.id ~out_port:out_auth_fail digest3
 in
 
 let out_auth_ok_stream =
-  Digest.node_out_stream_on_port ~node_id:idLeaf1 ~out_port:out_auth_ok1 digest3
+  Digest.node_out_stream_on_port ~node_id:nodeLeaf1.id ~out_port:out_auth_ok1 digest3
 in
 
 let out_payload_stream =
-  Digest.node_out_stream_on_port ~node_id:idPayload ~out_port:out_payload digest3
+  Digest.node_out_stream_on_port ~node_id:nodePayload.id ~out_port:out_payload digest3
 in
 
 assert_equal [] out_auth_fail_stream;

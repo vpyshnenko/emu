@@ -2,20 +2,20 @@
  (name test_digital_multi_locker)
  (libraries emu ounit2)
  (modules test_digital_multi_locker router ext net leaf observer utils)
- (enabled_if false)
+ ;(enabled_if false)
 )
 
 (test
  (name test_leaves)
  (libraries emu ounit2)
  (modules test_leaves router ext net leaf observer utils)
- (enabled_if false)
+ ;(enabled_if false)
 )
 
 (test
  (name test_huge_digital_multi_locker)
  (libraries emu ounit2)
  (modules test_huge_digital_multi_locker router ext net leaf observer utils)
- ;(enabled_if false)
+ (enabled_if false)
 )
 

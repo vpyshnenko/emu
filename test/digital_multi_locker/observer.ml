@@ -22,10 +22,10 @@ type observer = {
   output : observer_output;
 }
 
-let make_observer () : observer =
+let make_observer ~id : observer =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:0 in
   let initial_state = [] in  (* Observer is stateless *)
-  let b = Builder.Node.create ~state:initial_state ~vm in
+  let b = Builder.Node.create ~state:initial_state ~vm ~id () in
   
   (* INPUT PORTS - in declaration order *)
   let setup_ok = b.add_handler [

@@ -13,8 +13,16 @@ module NodeBuilder = struct
     finalize     : unit -> Node.t;
   }
 
-  let create ~state ~(vm : Vm.t) =
+  let create ~state ~(vm : Vm.t) ?id () =
     (* Builder state captured in closures *)
+	let node_id = 
+        match id with
+        | Some provided_id -> provided_id
+        | None -> 
+            let new_id = !next_node_id in
+            incr next_node_id;
+            new_id
+    in
     let next_in_port  = ref 0 in
     let next_out_port = ref 0 in
     let handlers      = ref [] in
@@ -35,9 +43,6 @@ module NodeBuilder = struct
     in
 
     let finalize () =
-      let id = !next_node_id in
-      incr next_node_id;
-
       let handlers_map =
         List.fold_left
           (fun acc (p, code) -> IntMap.add p code acc)
@@ -46,7 +51,7 @@ module NodeBuilder = struct
       in
 
       Node.create
-        ~id
+        ~id:node_id
         ~state
         ~vm
         ~handlers:handlers_map
@@ -64,7 +69,7 @@ end
 
 module NetBuilder = struct
   type t = {
-    add_node : Node.t -> int;
+    add_node : Node.t -> unit;
     connect  : src:int -> out_port:int -> dst:int -> in_port:int -> unit;
     finalize : unit -> Net.t;
   }
@@ -72,9 +77,8 @@ module NetBuilder = struct
   let create () =
     let net = ref (Net.create ()) in
 
-    let add_node node =
+    let add_node (node: Node.t) =
       net := Net.add_node node !net;
-      node.Node.id
     in
 
     let connect ~src ~out_port ~dst ~in_port =

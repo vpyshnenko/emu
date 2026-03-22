@@ -25,7 +25,7 @@ type leaf = {
 let make_leaf () : leaf =
   let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:1 in
   let initial_state = [0] in  (* Leaf starts with no token *)
-  let b = Builder.Node.create ~state:initial_state ~vm in
+  let b = Builder.Node.create ~state:initial_state ~vm () in
   
   (* INPUT PORTS - in declaration order *)
   let setup = b.add_handler [

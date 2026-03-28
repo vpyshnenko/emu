@@ -62,14 +62,20 @@ let connect { from = (src_id, out_p); to_ = (dst_id, in_p) } net =
   if not (Node.has_in_port dst_node in_p) then
     failwith (Printf.sprintf "net: node %d has no incoming port %d" dst_id in_p);
 
-  let old =
-    match IntPairMap.find_opt (src_id, out_p) net.routing with
-    | Some lst -> lst
-    | None -> []
-  in
+  (* let old = *)
+    (* match IntPairMap.find_opt (src_id, out_p) net.routing with *)
+    (* | Some lst -> lst *)
+    (* | None -> [] *)
+  (* in *)
 
+  (* let routing = *)
+    (* IntPairMap.add (src_id, out_p) (old @ [(dst_id, in_p)]) net.routing *)
+  (* in *)
+  
   let routing =
-    IntPairMap.add (src_id, out_p) (old @ [(dst_id, in_p)]) net.routing
+    match IntPairMap.find_opt (src_id, out_p) net.routing with
+    | Some lst -> IntPairMap.add (src_id, out_p) ((dst_id, in_p) :: lst) net.routing
+    | None -> IntPairMap.add (src_id, out_p) [(dst_id, in_p)] net.routing
   in
   { net with routing }
 

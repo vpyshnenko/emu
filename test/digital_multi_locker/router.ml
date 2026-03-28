@@ -1,6 +1,9 @@
 (* router.ml *)
 
 open Emu
+open Emu.Instructions
+
+module IntMap = Map.Make(Int)
 
 (* Define separate types for input and output port structures *)
 type router_input = {
@@ -20,83 +23,101 @@ type router = {
   output : router_output;
 }
 
-let make_router ~id ~n ~l ~is_root (): router =
-  let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
-  let count = if is_root then l else (-1) in
-  
-  let initial_state = if is_root then [count; -1] else [-1;-1] in
-  let b = Builder.Node.create ~state:initial_state ~vm ~id () in
-  
-  
-  
-  let setup_data = b.add_handler [
-    Load 0; Eq (-1); BranchOf [|
-	    [ PushA; PushConst (-1); Add; Store 0; Halt];
-	|];
-	Load 1; Eq (-1); BranchOf [|
-      [ 
-		PushA; Store 1;
-        Load 0; Gt 1; BranchOf [|
-		 [ PopA; Load 1; Emit;]
-        |]		 
-	  ];
-      [ Load 1; Emit; 
-	  	Load 0; PushConst (-1); Add; Store 0;
-	  ]
-    |];
-	Load 0; Eq 0; BranchOf [|
-	  [ 
-	    PushConst count; Store 0;
-	    PushConst (-1); Store 1;
-	  ]
-	|]
-  ] in
-  
+let make_ports ~n =
+  let input = { setup_data = 0; auth_data = 1 } in
+  let output = { 
+    setup = Array.init n (fun i -> i);
+    auth = Array.init n (fun i -> i + n);
+  } in
+  let out_ports = Array.to_list output.setup @ Array.to_list output.auth in
+  (input, output, out_ports)
 
-  
-  let auth_data = b.add_handler [
+let make_setup_handler ~count =
+  [
     Load 0; Eq (-1); BranchOf [|
-	    [ PushA; PushConst (-1); Add; Store 0; Halt];
-	|];
+      [ PushA; PushConst (-1); Add; Store 0; Halt ];
+    |];
     Load 1; Eq (-1); BranchOf [|
-	  [ 
-		LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
-	    PushA; Add; Store 1;
-        Load 0; PopA; Load 1; Emit;
-	  ];
       [ 
-	    Load 1; Emit;
-	    Load 0; PushConst (-1); Add; Store 0;
-	  ]
-	|];
-	Load 0; Eq 1; BranchOf [|
-	  [ 
-	    PushConst count; Store 0;
-	    PushConst (-1); Store 1;
-	  ]
-	|]
-  ] in 
+        PushA; Store 1;
+        Load 0; Gt 1; BranchOf [|
+          [ PopA; Load 1; Emit ];
+        |]		 
+      ];
+      [ Load 1; Emit; 
+        Load 0; PushConst (-1); Add; Store 0;
+      ]
+    |];
+    Load 0; Eq 0; BranchOf [|
+      [ 
+        PushConst count; Store 0;
+        PushConst (-1); Store 1;
+      ]
+    |]
+  ] 
   
-  (* OUTPUT PORTS - in declaration order *)
-  let setup_out = Array.init n (fun _ -> b.add_out_port ()) in
-  let auth_out = Array.init n (fun _ -> b.add_out_port ()) in
-  
-  (* Build the record with all captured port IDs *)
-  let input = {
-    setup_data;
-    auth_data;
-  } in
-  
-  let output = {
-    setup = setup_out;
-    auth = auth_out;
-  } in
-  
-  let node = b.finalize () in
-  
-  {
-    id = node.id;
-    node;
-    input;
-    output;
-  }
+let make_auth_handler ~count =
+  [
+    Load 0; Eq (-1); BranchOf [|
+      [ PushA; PushConst (-1); Add; Store 0; Halt ];
+    |];
+    Load 1; Eq (-1); BranchOf [|
+      [ 
+        LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
+        PushA; Add; Store 1;
+        Load 0; PopA; Load 1; Emit;
+      ];
+      [ 
+        Load 1; Emit;
+        Load 0; PushConst (-1); Add; Store 0;
+      ]
+    |];
+    Load 0; Eq 1; BranchOf [|
+      [ 
+        PushConst count; Store 0;
+        PushConst (-1); Store 1;
+      ]
+    |]
+  ]
+
+let setup_handler = make_setup_handler ~count:(-1)
+let auth_handler = make_auth_handler ~count:(-1)
+
+let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2
+let initial_state = [-1;-1]
+
+
+let make_router_gen ~n =
+  let (input, output, out_ports) = make_ports ~n in
+  let handlers = IntMap.empty
+    |> IntMap.add input.setup_data setup_handler
+    |> IntMap.add input.auth_data auth_handler
+  in
+  fun ~id  ->
+    let node = Node.create 
+        ~id 
+        ~state:initial_state 
+        ~vm 
+        ~handlers
+        ~out_ports 
+        ()
+      in
+      { id; node; input; output }
+	  
+	  
+let make_root_router ~id ~n ~l =
+  let (input, output, out_ports) = make_ports ~n in
+  let handlers = IntMap.empty
+    |> IntMap.add input.setup_data (make_setup_handler ~count:l)
+    |> IntMap.add input.auth_data (make_auth_handler ~count:l)
+  in
+  let node = Node.create 
+      ~id 
+      ~state:[l; -1]
+      ~vm 
+      ~handlers
+      ~out_ports 
+      ()
+   in
+   { id; node; input; output }
+

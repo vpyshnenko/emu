@@ -9,9 +9,10 @@ let post_inc r =
   old  (* Return old value *)
 
 let test_huge_digital_multi_locker _ctx =
-  (* Create huge network: !!!Test runs for 21 sec!!! *)
+  
+  (* Create huge network: !!! Test runs for 7 sec!!! *)
   let l = 6 in (* number of layers 0..(l-1) aka password length *)
-  let n = 6 in (* number of digits 0..n-1 *)
+  let n = 10 in (* number of digits 0..n-1 *)
   
   let Net.{net; ext; observer; leaves; _ } = 
     Net.make_net ~n ~l () in

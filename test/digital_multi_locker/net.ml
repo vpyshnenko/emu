@@ -29,12 +29,13 @@ let make_net ~n ~l () : t =
   let routers = Array.make l [||] in
   
   (* Layer 0 (root layer) - just one router *)
-  routers.(0) <- [| Router.make_router ~n ~l ~is_root:true ~id:(next_id ()) () |];
+  routers.(0) <- [| Router.make_root_router ~n ~l ~id:(next_id ()) |];
   
+  let make_router = Router.make_router_gen ~n in
   (* Layers 1 to l-1 - n^(layer) routers *)
   for layer = 1 to l-1 do
     let count = int_of_float (float n ** float layer) in
-    routers.(layer) <- Array.init count (fun _ -> Router.make_router ~id:(next_id ()) ~n ~l ~is_root:false ())
+    routers.(layer) <- Array.init count (fun _ -> make_router ~id:(next_id ()))
   done;
   
   (* Create leaves - n^l leaves at the bottom *)

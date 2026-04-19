@@ -44,6 +44,13 @@ let eval_normal
   : Stack.t =
   match instr with
   (* --- Stack operations --- *)
+  | Dup ->
+    if is_empty st then
+      failwith "VM: Dup on empty stack"
+    else
+      let top = peek st in
+      push top st
+  
   | Pop ->
       let _, st = pop st in
       st
@@ -167,7 +174,8 @@ let eval_normal
   (* --- Control instructions should not reach here --- *)
   | Halt
   | Shutdown
-  | BranchOf _ ->
+  | BranchOf _
+  | Loop _ ->
       failwith "eval_normal: unexpected control instruction"
 
 (* ------------------------------------------------------------ *)
@@ -207,6 +215,13 @@ let exec_instr
       else
         (* Invalid index - just continue with rest of program *)
         { st = st'; control = Continue; remaining_code = rest_code }
+  | Instructions.Loop body ->
+      let cond, st' = pop st in
+      if cond = 0 then
+        { st = st'; control = Continue; remaining_code = rest_code }
+      else
+        let loop_code = body @ [Instructions.Loop body] @ rest_code in
+        { st = st'; control = Continue; remaining_code = loop_code }
 
   (* --- Normal instructions --- *)
   | _ ->

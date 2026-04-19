@@ -15,6 +15,12 @@
  (libraries emu ounit2)
  ;(enabled_if false)
  )
+
+(test
+ (name test_loop)
+ (libraries emu ounit2)
+ ;(enabled_if false)
+ )
  
 (test
  (name test_stack)

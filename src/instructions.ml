@@ -2,6 +2,8 @@
 
 type instr =
   (* Stack operations *)
+  | Dup
+  
   | Pop
   | PushConst of int
   | Add
@@ -36,4 +38,5 @@ type instr =
   | Halt (* early return *)
   | Shutdown (* exclude curent node from further network evaluation *)
   | BranchOf of instr list array
+  | Loop of instr list 
   

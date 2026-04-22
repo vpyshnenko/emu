@@ -85,6 +85,11 @@ let eval_normal
       let a, st = pop st in
       let b, st = pop st in
       push (a + b) st
+	  
+  | Sub ->
+      let a, st = pop st in
+      let b, st = pop st in
+      push (b - a) st
 
   | AddMod ->
       let input, st = pop st in

@@ -1,0 +1,9 @@
+(test
+ (name test_sorting_net)
+ (libraries emu ounit2)
+ (modules test_sorting_net router ext)
+ ;(enabled_if false)
+)
+
+
+

@@ -8,6 +8,7 @@ type instr =
   | PushConst of int
   | Add
   | AddMod
+  | Sub
   | Shl
   | Shr
   

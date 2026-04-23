@@ -1,7 +1,7 @@
 (test
  (name test_sorting_net)
  (libraries emu ounit2)
- (modules test_sorting_net router ext)
+ (modules test_sorting_net net router ext sink utils)
  ;(enabled_if false)
 )
 

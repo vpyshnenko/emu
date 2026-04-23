@@ -11,7 +11,7 @@ type ext_output = {
   reset : int;        (* reset all routers *)
 }
 
-type ext = {
+type t = {
   node: Node.t;
   id : int;
   output : ext_output;
@@ -19,9 +19,9 @@ type ext = {
 
 let output = { data = 0; flush = 1; reset = 2 }
 
-let out_ports = let open output in [data; flush; reset]
+let out_ports = [output.data; output.flush; output.reset]
 
-let make_ext ~id : ext =
+let make ~id : t =
   let node = Node.create 
     ~id 
     ~state:[] 

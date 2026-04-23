@@ -43,6 +43,9 @@ let add_node node net =
   let nodes = IntMap.add id node net.nodes in
   { net with nodes }
 
+let size net =
+  IntMap.cardinal net.nodes
+
 (* ------------------------------------------------------------ *)
 (* Connect nodes                                                *)
 (* ------------------------------------------------------------ *)

@@ -32,7 +32,7 @@ type router_output = {
   reset: int;
 }
 
-type router = {
+type t = {
   node: Node.t;
   id : int;
   input : router_input;
@@ -59,8 +59,8 @@ let output = {
 
 let out_ports = List.init 7 Fun.id
 
-let state_rec = { flag = (-1); value = (-1); count = (-1) }
-let initial_state = let open state_rec in [flag; value; count]
+let state = { flag = (-1); value = (-1); count = (-1) }
+let initial_state = [state.flag; state.value; state.count]
 
 let data_handler = [
   Load 0; Eq (-1); (* check noninit flag *)
@@ -68,11 +68,11 @@ let data_handler = [
     [ 
 	  PushConst 0; Store 0; (* set init flag as leaf *)
 	  PushA; Store 1;  (* store value *)
-	  PushConst 1; Store 2  (* init counter *)
+	  PushConst 1; Store 2;  (* init counter *)
 	  Halt;
 	]
   |];
-  Load 1; PushA; Sub; Eq 0; (* compare with cur value *)
+  Load 1; PushA; Sub;  Eq 0; (* compare with cur value *)
   BranchOf [|
    [ Load 2; PushConst 1; Add; Store 2; Halt ];(* if the same then inc counter *)
    [
@@ -89,38 +89,38 @@ let flush_handler = [
   Load 0; Eq 0; (* check is leaf *)
   BranchOf [|
     [
-	  Load 2; PopA; (* load cur value in regA *)
-	  Load 3; (* load counter *)
+	  Load 1; PopA; (* load cur value in regA *)
+	  Load 2; (* load counter *)
 	  PushConst 1; (* force entry to loop body *)
 	  Loop [
 	    EmitTo output.out;
-        PushConst 1; Sub;
+        PushConst 1; Sub; 
         Eq 0
-	  ]
+	  ];
 	  PushConst 1; PopA; EmitTo output.flush_complete;
 	];
 	[ EmitTo output.flush_lt ];
   |]
 ]
 let flush_lt_complete_handler = [
-  Load 2; PopA;
-  Load 3;
+  Load 1; PopA;
+  Load 2; Eq 0;
   Loop [
     EmitTo output.out;
-    PushConst 1; Sub;
+    PushConst 1; Sub; 
     Eq 0
- ]
+ ];
  PushConst 1; PopA; EmitTo output.flush_gt;
 ]
 
-let flush_gt_complete = [
+let flush_gt_complete_handler = [
   EmitTo output.flush_complete
 ]
 
 let reset_handler = [
   PushConst (-1);
   Store 0; Store 1; Store 2;
-  EmitTo out.reset
+  EmitTo output.reset
 ]
 
 let handlers = IntMap.empty
@@ -132,7 +132,7 @@ let handlers = IntMap.empty
 
 let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:3
 
-let make_router ~id =
+let make ~id : t =
   let node = Node.create 
       ~id 
       ~state:initial_state 

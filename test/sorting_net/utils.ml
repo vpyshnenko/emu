@@ -26,3 +26,8 @@ let tap f x = f x; x
 (* emit ~ext ~values:[1;3;2;1] *)
 let emit ~ext ~values (digest : Emu.Digest.t) : Emu.Digest.t = 
   Emu.Runtime.run digest.final_snapshot ~schedule:((data_messages ~ext ~values) @ (flush_message ~ext))
+  
+let rec is_ordered = function
+  | [] -> true
+  | [_] -> true
+  | x :: (y :: _ as tail) -> x <= y && is_ordered tail

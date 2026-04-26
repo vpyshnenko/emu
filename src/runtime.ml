@@ -103,7 +103,7 @@ let make_step = step
 
 let run_avalanche 
     ~(history : Step.t Snoc.t) 
-    ?(max_steps = 100)  (* Maximum steps allowed in this avalanche *)
+    ?(max_steps = 1000)  (* Maximum steps allowed in this avalanche *)
     (snap : Snapshot.t)
   : Snapshot.t
   =

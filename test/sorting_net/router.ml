@@ -86,7 +86,14 @@ let data_handler = [
 ]
 
 let flush_handler = [
-  Load 0; Eq 0; (* check is leaf *)
+  Load 0;
+  
+  Eq (-1); (* check is non-init *)
+  BranchOf [|
+    [ EmitTo output.flush_complete; Halt ]
+  |];
+  
+  Eq 0; (* check is leaf *)
   BranchOf [|
     [
 	  Load 1; PopA; (* load cur value in regA *)
@@ -98,9 +105,11 @@ let flush_handler = [
         Eq 0
 	  ];
 	  PushConst 1; PopA; EmitTo output.flush_complete;
-	];
-	[ EmitTo output.flush_lt ];
-  |]
+	  Halt
+	]
+  |];
+  
+  EmitTo output.flush_lt (* non-leaf initiates flush for children*)
 ]
 let flush_lt_complete_handler = [
   Load 1; PopA;

@@ -31,3 +31,18 @@ let rec is_ordered = function
   | [] -> true
   | [_] -> true
   | x :: (y :: _ as tail) -> x <= y && is_ordered tail
+
+let generate_balanced_sorting_tree_list n =
+  let size = (1 lsl n) - 1 in
+  
+  let rec process queue acc =
+    match queue with
+    | [] -> List.rev acc
+    | (low, high) :: rest ->
+        if low > high then process rest acc
+        else
+          let mid = (low + high) / 2 in
+          process (rest @ [(low, mid - 1); (mid + 1, high)]) (mid :: acc)
+  in
+  
+  process [(1, size)] []

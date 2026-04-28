@@ -20,11 +20,8 @@ let test_sorting_net _ctx =
   (* Run the test pipeline - ignore final digest with _ *)
   let _ =
     Emu.Digest.empty init_snap
-    (* |> emit ~ext ~values:[2;3;1;2;1;] *)
-    (* |> emit ~ext ~values:[2;6;4;2;1;] *)
-    (* |> emit ~ext ~values:[1; 2; 3; 4] *)
-    (* |> emit ~ext ~values:[1; 2; 3] *)
-    |> emit ~ext ~values:[4; 2; 6; 1; 3; 5; 7; ] (* sorting net preconfiguration with balanced values *)
+    (* |> emit ~ext ~values:[4; 2; 6; 1; 3; 5; 7; ] (* sorting net preconfiguration with balanced values *) *)
+    |> emit ~ext ~values:(generate_balanced_sorting_tree_list l)
 	    |> tap (fun d -> 
 	     let in_stream = get_in_stream root_router.id  root_router.input.data d in
 	     let out_stream = get_out_stream sink.id sink.output.out d in
@@ -44,7 +41,7 @@ let test_sorting_net _ctx =
          Printf.printf "out stream: %s\n" (pp_list out_stream);
          Printf.printf "out overflow stream: %s\n" (pp_list out_overflow_stream);
 	   )
-    |> emit ~ext ~values: [8; -1; 9]
+    |> emit ~ext ~values: [8; -1; 9] (* values beyond preconfigured range  should flush to sink.output.overflow *)
     |> tap (fun d -> 
 	     let in_stream = get_in_stream root_router.id  root_router.input.data d in
 	     let out_stream = get_out_stream sink.id sink.output.out d in

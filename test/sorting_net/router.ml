@@ -68,7 +68,8 @@ let data_handler = [
     [ 
 	  PushConst 0; Store 0; (* set init flag as leaf *)
 	  PushA; Store 1;  (* store value *)
-	  PushConst 1; Store 2;  (* init counter *)
+	  (* PushConst 1; Store 2;  (* init counter *) *)
+	  PushConst 0; Store 2;  (* init counter *)
 	  Halt;
 	]
   |];
@@ -98,7 +99,7 @@ let flush_handler = [
     [
 	  Load 1; PopA; (* load cur value in regA *)
 	  Load 2; (* load counter *)
-	  PushConst 1; (* force entry to loop body *)
+	  Eq 0;
 	  Loop [
 	    EmitTo output.out;
         PushConst 1; Sub; 

@@ -11,6 +11,11 @@ type router_state = {
   value: int;
 }
 
+type router_map = {
+  flag: int;
+  value: int;
+}
+
 type router_input = {
   data: int;
   reset: int;
@@ -30,6 +35,8 @@ type t = {
   output : router_output;
 }
 
+let mem = { flag = 0; value = 1 }
+
 let input = {
   data = 0;
   reset = 1;
@@ -48,16 +55,16 @@ let state = { flag = (-1); value = (-1) }
 let initial_state = [state.flag; state.value]
 
 let data_handler = [
-  Load 0; Eq (-1); (* check noninit flag *)
+  Load mem.flag; Eq (-1); (* check noninit flag *)
   BranchOf [|
     [ 
-	  PushConst 0; Store 0; (* set init flag as leaf *)
-	  PushA; Store 1;  (* store value *)
+	  PushConst 0; Store mem.flag; (* set init flag as leaf *)
+	  PushA; Store mem.value;  (* store value *)
 	  EmitTo output.out;
 	  Halt
 	]
   |];
-  Load 1; PushA; Sub;  Eq 0; (* compare with cur value *)
+  Load mem.value; PushA; Sub;  Eq 0; (* compare with cur value *)
   BranchOf [|
    [ Halt ];(* if the same as basic value then do nothing *)
    [
@@ -72,7 +79,7 @@ let data_handler = [
 
 let reset_handler = [
   PushConst (-1);
-  Store 0; Store 1;
+  Store mem.flag; Store mem.value;
   EmitTo output.reset
 ]
 

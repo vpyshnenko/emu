@@ -20,7 +20,22 @@ let test_unique_net _ctx =
   (* Run the test pipeline - ignore final digest with _ *)
   let _ =
     Emu.Digest.empty init_snap
-    |> emit ~ext ~values:[4; 2; 2; 0; 1; 3; 5; 7; 3; 6; 5; 7;] 
+    |> emit ~ext ~values:[ 3; 5; 7; 3; 5; 7;] 
+    |> tap (fun d -> 
+	     let in_stream = get_in_stream root_router.id  root_router.input.data d in
+	     let out_stream = get_out_stream sink.id sink.output.out d in
+	     let out_saturated_stream = get_out_stream sink.id sink.output.saturated d in
+		 let sink_state = Emu.Digest.final_node_state ~node_id:sink.id d in
+		 assert_equal out_stream [ 3; 5; 7];
+	     let out_overflow_stream = get_out_stream sink.id sink.output.overflow d in
+         Printf.printf "in stream: %s\n" (pp_list in_stream);
+         Printf.printf "out stream: %s\n" (pp_list out_stream);
+         Printf.printf "out overflow stream: %s\n" (pp_list out_overflow_stream);
+         Printf.printf "out saturated stream: %s\n" (pp_list out_saturated_stream);
+         Printf.printf "sink state: %s\n" (pp_list sink_state)
+	   )
+    |> reset ~ext
+    |> emit ~ext ~values:[4; 2; 2; 0; 1; 3; 5; 7; 3; 6; 5; 7;] (* not enouth net capacity leads to overflow *)
     |> tap (fun d -> 
 	     let in_stream = get_in_stream root_router.id  root_router.input.data d in
 	     let out_stream = get_out_stream sink.id sink.output.out d in

@@ -51,7 +51,6 @@ let overflow_handler = [ EmitTo output.overflow ]
 
 let reset_handler size = [
   PushConst size; Store mem.count;
-  LogStack;
 ]
 
 let handlers = IntMap.empty

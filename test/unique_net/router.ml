@@ -11,7 +11,7 @@ type router_state = {
   value: int;
 }
 
-type router_map = {
+type router_mem_map = {
   flag: int;
   value: int;
 }

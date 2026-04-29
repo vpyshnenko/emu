@@ -5,7 +5,7 @@ open Emu.Instructions
 
 module IntMap = Map.Make(Int)
 
-type sink_mem = {
+type sink_mem_map = {
   count: int;
 }
 

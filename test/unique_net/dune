@@ -1,0 +1,9 @@
+(test
+ (name test_unique_net)
+ (libraries emu ounit2)
+ (modules test_unique_net net router ext sink utils)
+ ;(enabled_if false)
+)
+
+
+

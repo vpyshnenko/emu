@@ -14,24 +14,18 @@ let data_messages ~ext ~values =
   List.map (fun value ->
     { src = ext.id; out_port = ext.output.data; payload = value }
   ) values
-
-let flush_message ~ext =
-  [ { src = ext.id; out_port = ext.output.flush; payload = 1 } ]
-
+  
 let reset_message ~ext =
   [ { src = ext.id; out_port = ext.output.reset; payload = 1 } ]
 
-  
-
+let reset ~ext (digest : Emu.Digest.t) : Emu.Digest.t = 
+  Emu.Runtime.run digest.final_snapshot ~schedule:(reset_message ~ext)
 (* Helper function for tap - since OUnit doesn't have tap *)
 let tap f x = f x; x
 
 (* emit ~ext ~values:[1;3;2;1] *)
 let emit ~ext ~values (digest : Emu.Digest.t) : Emu.Digest.t = 
-  Emu.Runtime.run digest.final_snapshot ~schedule:((data_messages ~ext ~values) @ (reset_message ~ext))
-  
-let reset ~ext (digest : Emu.Digest.t) : Emu.Digest.t = 
-  Emu.Runtime.run digest.final_snapshot ~schedule:(reset_message ~ext)
+  Emu.Runtime.run digest.final_snapshot ~schedule:(data_messages ~ext ~values)
   
 let rec is_ordered = function
   | [] -> true

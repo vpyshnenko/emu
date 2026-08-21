@@ -6,7 +6,14 @@ module IntMap = Map.Make(Int)
 type t = {
   mutable next_node_id : int;                         (* ID generator *)
   mutable nodes : unit IntMap.t;
-  mutable connections : (Net.connection * Net.connection) list;
+  mutable connections : (
+    Net.connection *
+	Net.connection *
+	Net.connection *
+	Net.connection *
+	Net.connection *
+	Net.connection
+  ) list;
 }
 
 (* Creates a builder starting with autoincremented Node IDs from 0 *)
@@ -16,18 +23,25 @@ let create () = {
   connections = [];
 }
 
-let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:2
-let state = [-1; 255;]
+let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:3
+let state = [-1; max_int; 0]
 
-let init_in = 0
+let stp_init = 0
 let stp_in = 1
+let count_init = 2
+let count_in = 3
 
 let stp_out = 0
+let count_init_out = 1
+let count_out = 2
+
 
 let handlers =
 	Node.IntMap.empty
-	|> Node.IntMap.add init_in Handlers.init
+	|> Node.IntMap.add stp_init Handlers.stp_init
 	|> Node.IntMap.add stp_in Handlers.stp
+	|> Node.IntMap.add count_init Handlers.count_init
+	|> Node.IntMap.add count_in Handlers.count_in
 
 (* Adds a node, autoincrementing its ID and pre-registering Port 0 *)
 let add_node t =
@@ -48,9 +62,13 @@ let connect t idA idB =
   in
   
   (* Setup physical network connections *)
-  let forward = { Net.from = (idA, stp_out); to_ = (idB, stp_in) } in
-  let reverse = { Net.from = (idB, stp_out); to_ = (idA, stp_in) } in
-  t.connections <- (forward, reverse) :: t.connections
+  let stp_ab = { Net.from = (idA, stp_out); to_ = (idB, stp_in) } in
+  let stp_ba = { Net.from = (idB, stp_out); to_ = (idA, stp_in) } in
+  let count_init_ab = { Net.from = (idA, count_init_out); to_ = (idB, count_init) } in
+  let count_init_ba = { Net.from = (idB, count_init_out); to_ = (idA, count_init) } in
+  let count_ab = { Net.from = (idA, count_out); to_ = (idB, count_in) } in
+  let count_ba = { Net.from = (idB, count_out); to_ = (idA, count_in) } in
+  t.connections <- (stp_ab, stp_ba, count_init_ab, count_init_ba, count_ab, count_ba) :: t.connections
 
 (* Compiles everything into a finalized Net.t instance *)
 let finalize t root_id =
@@ -61,17 +79,21 @@ let finalize t root_id =
       ~state
       ~vm
       ~handlers
-      ~out_ports:[stp_out]
+      ~out_ports:[stp_out; count_init_out; count_out;]
       () 
     in
     Net.add_node node acc_net
   ) t.nodes (Net.create ()) in
 
   (* 2. Apply all connections to routing tables *)
-  let net = List.fold_left (fun acc_net (forward, reverse) ->
+  let net = List.fold_left (fun acc_net (stp_ab, stp_ba, count_init_ab, count_init_ba, count_ab, count_ba) ->
     acc_net 
-    |> Net.connect forward 
-    |> Net.connect reverse
+    |> Net.connect stp_ab 
+    |> Net.connect stp_ba
+    |> Net.connect count_init_ab
+    |> Net.connect count_init_ba
+    |> Net.connect count_ab
+    |> Net.connect count_ba
   ) net t.connections in
   
   let ext_node = Node.create 
@@ -79,12 +101,14 @@ let finalize t root_id =
     ~state:[] 
     ~vm:Vm.empty
     ~handlers:Node.IntMap.empty
-    ~out_ports: [0]
+    ~out_ports: [0; 1]
     ()
   in
   
-  let net = Net.add_node ext_node net in
-  Net.connect { from = (ext_node.id, 0); to_ = (root_id, 0) } net 
+  Net.add_node ext_node net
+    |> Net.connect { from = (ext_node.id, 0); to_ = (root_id, stp_init) }
+    |> Net.connect { from = (ext_node.id, 1); to_ = (root_id, count_init) }
+  
   
   
   

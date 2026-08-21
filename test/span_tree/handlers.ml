@@ -3,17 +3,19 @@ open Emu.Instructions
 type mem = {
   parent_node_id: int;
   distance: int;
+  count: int;
 }
 
-let init_in = 0
-let stp_in = 1
 
 let stp_out = 0
 
-let mem = { parent_node_id = 0; distance = 1 }
+let count_init_out = 1
+let count_out = 2
+
+let mem = { parent_node_id = 0; distance = 1; count = 2 }
 
 
-let init = [
+let stp_init = [
   (* 1. Set Parent Port to -1 (sentinel indicating "I am Root") *)
   PushConst (-1);
   Store mem.parent_node_id;                 (* RAM <- reset parent_node to #undefined (-1) *)
@@ -51,6 +53,43 @@ let stp = [
       PeekA;
 	  EmitTo stp_out;
     ];
+  |];
+  Pop;
+]
+
+let count_init = [
+  Load mem.count;
+  GtPop 0;
+  BranchOf [|
+    [ Halt ]
+  |];
+  
+  PushConst 1;
+  Store mem.count;                 
+  Pop;
+  
+  Load mem.parent_node_id;
+  PopA;
+  EmitTo count_out;
+  
+  PushConst 1;
+  PopA;
+  EmitTo count_init_out;
+]
+
+let count_in = [
+  PushA;
+  LoadMeta NodeId;
+  Sub;
+  NonEqPop 0;
+  BranchOf [|
+    [ Halt ]
+  |];
+  Load mem.parent_node_id;
+  EqPop (-1);
+  BranchOf [|
+    [ Load mem.count; PushConst 1; Add; Store mem.count; ];
+	[ Load mem.parent_node_id; PeekA; EmitTo count_out; ]
   |];
   Pop;
 ]

@@ -29,7 +29,7 @@ let test_span_tree _ctx =
   Netbuilder.connect builder n2 n6; (* Node 0 (Port 1) <-> Node 1 (Port 1) *)
   Netbuilder.connect builder n3 n7; (* Node 0 (Port 1) <-> Node 1 (Port 1) *)
   
-  let root_id = n6 in
+  let root_id = n3 in
   (* 3. Finalize into an executable network simulation *)
   let net = Netbuilder.finalize builder root_id in
   

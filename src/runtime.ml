@@ -46,7 +46,7 @@ let deliver_event
   List.fold_left
     (fun (snap, steps_acc) (dst_id, in_port) ->
        let net_after, outs =
-         Net.deliver snap.net dst_id in_port ev.payload
+         Net.deliver snap.net ev.src dst_id in_port ev.payload
        in
 
        let snap = Snapshot.with_net snap net_after in

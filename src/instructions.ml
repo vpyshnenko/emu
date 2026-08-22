@@ -16,10 +16,17 @@ type instr =
   | LogMem
   
   | Eq of int  (* Compare top of stack with constant X *)
+  | NonEq of int (* Compare top of stack for inequality with constant X (peek) *)
   | Gt of int  
   | Lt of int  
   | Ge of int  
   | Le of int  
+  | EqPop of int (* Pop: compares top of stack with X, pops the operand *)
+  | NonEqPop of int (* Compare top of stack for inequality with constant X and pop *)
+  | GtPop of int
+  | LtPop of int
+  | GePop of int
+  | LePop of int
   
   
   | PushA

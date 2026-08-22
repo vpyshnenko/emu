@@ -86,14 +86,14 @@ let connect { from = (src_id, out_p); to_ = (dst_id, in_p) } net =
 (* Deliver an event to a single destination node                *)
 (* ------------------------------------------------------------ *)
 
-let deliver net dst_id in_port payload =
+let deliver net src_id dst_id in_port payload =
   let dst_node = get_node net dst_id in
 
   if dst_node.halted then
     (net, [])
   else begin
     let updated_node, outs =
-      Node.handle_event dst_node ~port:in_port ~payload
+      Node.handle_event dst_node ~port:in_port ~payload ~src_id
     in
 
     let nodes = IntMap.add dst_id updated_node net.nodes in

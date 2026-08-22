@@ -65,6 +65,10 @@ let eval_normal
      else
        push 1 st    (* Not equal -> push 1 on top *)
 	   
+  | NonEq x -> 
+      let top = peek st in 
+      if top <> x then push 0 st else push 1 st
+	   
   | Gt x ->
       let top = peek st in
       if top > x then push 0 st else push 1 st
@@ -80,6 +84,30 @@ let eval_normal
   | Le x ->
       let top = peek st in
       if top <= x then push 0 st else push 1 st
+	  
+  | EqPop x -> 
+      let top, st' = pop st in 
+      if top = x then push 0 st' else push 1 st'
+	  
+  | NonEqPop x -> 
+      let top, st' = pop st in 
+      if top <> x then push 0 st' else push 1 st'
+	  
+  | GtPop x -> 
+      let top, st' = pop st in 
+      if top > x then push 0 st' else push 1 st'
+	  
+  | LtPop x -> 
+      let top, st' = pop st in 
+      if top < x then push 0 st' else push 1 st'
+	  
+  | GePop x -> 
+      let top, st' = pop st in 
+      if top >= x then push 0 st' else push 1 st'
+	  
+  | LePop x -> 
+    let top, st' = pop st in 
+    if top <= x then push 0 st' else push 1 st'
 
   | Add ->
       let a, st = pop st in

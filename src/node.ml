@@ -59,7 +59,7 @@ let has_in_port node p =
 (* Event dispatch                                               *)
 (* ------------------------------------------------------------ *)
 
-let handle_event node ~port ~payload =
+let handle_event node ~port ~payload ~src_id =
   if node.halted then
     (node, [])
   else
@@ -77,7 +77,8 @@ let handle_event node ~port ~payload =
         ~node_id:node.id
         ~out_port_count:(List.length node.out_ports)
         ~in_port_count:(IntMap.cardinal node.handlers)
-
+        ~cur_in_port:port
+		~sender_node_id:src_id
     in
 
     let out_port_count = List.length node.out_ports in

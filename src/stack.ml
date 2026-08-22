@@ -39,5 +39,15 @@ let get_nth st n =
       aux st' (i - 1)
   in
   aux st n
+  
+let pop_n st n =
+  if n < 0 then failwith "Stack.pop_n: negative count";
+  let rec aux current_st i acc =
+    if i = 0 then (List.rev acc, current_st)
+    else
+      let v, rest_st = pop current_st in
+      aux rest_st (i - 1) (v :: acc)
+  in
+  aux st n []
 
 

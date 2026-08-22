@@ -2,7 +2,7 @@
 
 type t = {
   net : Net.t;
-  queue : (int * int * int) Queue.t;
+  queue : (int * int * Payload.t) Queue.t;
 }
 
 let empty =

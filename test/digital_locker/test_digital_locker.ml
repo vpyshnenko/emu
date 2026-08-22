@@ -19,9 +19,9 @@ let test_digital_locker _ctx =
   
   (* Run first schedule - reset both tokens *)
   let digest1 = Emu.Runtime.run init_snap ~schedule:[
-    { src = ext.id; out_port = ext.output.setup_reset; payload = 1 };
-    { src = ext.id; out_port = ext.output.auth_reset; payload = 1 };
-	{ src = ext.id; out_port = ext.output.payload; payload = 42 };
+    { src = ext.id; out_port = ext.output.setup_reset; payload = [1] };
+    { src = ext.id; out_port = ext.output.auth_reset; payload = [1] };
+	{ src = ext.id; out_port = ext.output.payload; payload = [42] };
   ] in
   
   (* Check final state after reset *)
@@ -32,10 +32,10 @@ let test_digital_locker _ctx =
   assert_equal [1;1] root_router_final_state;
   
   let digest2 = Emu.Runtime.run digest1.final_snapshot ~schedule:[
-    { src = ext.id; out_port = ext.output.setup_data; payload = 1 };
-    { src = ext.id; out_port = ext.output.setup_data; payload = 2 };
-    { src = ext.id; out_port = ext.output.setup_data; payload = 2 };
-    { src = ext.id; out_port = ext.output.setup_data; payload = 9 };
+    { src = ext.id; out_port = ext.output.setup_data; payload = [1] };
+    { src = ext.id; out_port = ext.output.setup_data; payload = [2] };
+    { src = ext.id; out_port = ext.output.setup_data; payload = [2] };
+    { src = ext.id; out_port = ext.output.setup_data; payload = [9] };
   ] in
 
 
@@ -51,10 +51,10 @@ let test_digital_locker _ctx =
   
   (* Test auth phase - correct digit for leaf 0 *)
   let digest3 = Emu.Runtime.run digest2.final_snapshot ~schedule:[
-    { src = ext.id; out_port = ext.output.auth_data; payload = 0 };
-    { src = ext.id; out_port = ext.output.auth_data; payload = 1 };
-    { src = ext.id; out_port = ext.output.auth_data; payload = 1 };
-    { src = ext.id; out_port = ext.output.auth_data; payload = 9 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [0] };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [1] };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [1] };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [9] };
   ] in
   
   
@@ -68,12 +68,12 @@ let test_digital_locker _ctx =
   Printf.printf "auth_fail_stream: %s\n" (pp_list auth_fail_stream);
   
   let digest4 = Emu.Runtime.run digest3.final_snapshot ~schedule:[
-    { src = ext.id; out_port = ext.output.auth_reset; payload = 1 };
+    { src = ext.id; out_port = ext.output.auth_reset; payload = [1] };
 	
-    { src = ext.id; out_port = ext.output.auth_data; payload = 1 };
-    { src = ext.id; out_port = ext.output.auth_data; payload = 2 };
-    { src = ext.id; out_port = ext.output.auth_data; payload = 2 };
-    { src = ext.id; out_port = ext.output.auth_data; payload = 9 };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [1] };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [2] };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [2] };
+    { src = ext.id; out_port = ext.output.auth_data; payload = [9] };
   ] in
   
   let unlocker_auth_ok =

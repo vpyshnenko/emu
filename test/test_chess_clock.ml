@@ -158,16 +158,16 @@ let test_chess_clock _ctx =
   (* Schedule                                                     *)
   (* ------------------------------------------------------------ *)
   let schedule = [
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeSw.id;  out_port = outSw;  payload = 1 }; (* switch to B *)
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeSw.id;  out_port = outSw;  payload = 1 }; (* switch to A *)
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
-    { Runtime.src = nodeGen.id; out_port = outGen; payload = 1 };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeSw.id;  out_port = outSw;  payload = [1] }; (* switch to B *)
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeSw.id;  out_port = outSw;  payload = [1] }; (* switch to A *)
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
+    { Runtime.src = nodeGen.id; out_port = outGen; payload = [1] };
   ] in
 
   (* ------------------------------------------------------------ *)

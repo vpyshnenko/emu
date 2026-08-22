@@ -41,7 +41,9 @@ type instr =
   (* Emission instructions *)
   | Emit                  (* send regA content to port defined by top of stack *)
   | EmitTo of int         (* send regA content to port by index *)
-
+  | LoadPayload of int    (* load payload element by index *)
+  | SendTo of int * int   (* send to (out_port, n stack entries) *)
+  
   (* Control flow *)
   | Halt (* early return *)
   | Shutdown (* exclude curent node from further network evaluation *)

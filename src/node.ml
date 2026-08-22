@@ -60,6 +60,11 @@ let has_in_port node p =
 (* ------------------------------------------------------------ *)
 
 let handle_event node ~port ~payload ~src_id =
+  if payload = [] then
+    failwith (Printf.sprintf 
+      "node %d: protocol violation. Received an empty packet on incoming port %d from node %d" 
+      node.id port src_id);
+	  
   if node.halted then
     (node, [])
   else
@@ -81,7 +86,6 @@ let handle_event node ~port ~payload ~src_id =
 		~sender_node_id:src_id
     in
 
-    let out_port_count = List.length node.out_ports in
     let new_state, outs, halted =
       Vm.exec_program
 	    node.vm
@@ -89,18 +93,22 @@ let handle_event node ~port ~payload ~src_id =
         meta_info
         code
         payload
-        out_port_count
     in
 
     let out_ports_array = Array.of_list node.out_ports in
-
+    let out_port_count = List.length node.out_ports in
     let translated_outs =
       List.map
         (fun (sym_idx, v) ->
-           if sym_idx < 0 || sym_idx >= Array.length out_ports_array then
+           if sym_idx < 0 || sym_idx >= out_port_count then
              failwith
                (Printf.sprintf
                   "node: handler emitted invalid port index %d" sym_idx);
+		   if v = [] then
+             failwith
+               (Printf.sprintf
+                  "node %d: protocol violation. Handler on port %d emitted an empty packet to symbolic port %d"
+                  node.id port sym_idx);
            let actual_id = out_ports_array.(sym_idx) in
            (actual_id, v)
         )

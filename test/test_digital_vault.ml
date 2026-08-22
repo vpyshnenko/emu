@@ -273,8 +273,8 @@ let init_snap = Runtime.create net in
 
 let digest1 =
   Runtime.run init_snap ~schedule:[
-    { Runtime.src = nodeExt.id; out_port = out_ext_payload; payload = 42 };
-    { Runtime.src = nodeExt.id; out_port = out_setup_digit; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_ext_payload; payload = [42] };
+    { Runtime.src = nodeExt.id; out_port = out_setup_digit; payload = [1] };
 	
   ] 
 in
@@ -287,7 +287,7 @@ assert_equal [1] out_setup_ok_stream;
 
 let digest2 =
   Runtime.run digest1.final_snapshot ~schedule:[
-    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = 0 };
+    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = [0] };
   ] 
   
 in
@@ -300,8 +300,8 @@ assert_equal [1] out_auth_fail_stream;
 
 let digest3 =
   Runtime.run digest2.final_snapshot ~schedule:[
-    { Runtime.src = nodeExt.id; out_port = out_reset_auth; payload = 1 };
-    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = 1 };
+    { Runtime.src = nodeExt.id; out_port = out_reset_auth; payload = [1] };
+    { Runtime.src = nodeExt.id; out_port = out_auth_digit; payload = [1] };
   ] 
   
 in

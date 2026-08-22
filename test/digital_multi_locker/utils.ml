@@ -12,18 +12,18 @@ let get_in_stream node_id port_id digest =
   
 let digit_messages ~ext ~password = 
   List.map (fun digit ->
-      { src = ext.id; out_port = ext.output.setup_data; payload = digit }
+      { src = ext.id; out_port = ext.output.setup_data; payload = [digit] }
     ) password
 	
 let value_message ~ext ~value = 
-  { src = ext.id; out_port = ext.output.setup_data; payload = value }
+  { src = ext.id; out_port = ext.output.setup_data; payload = [value] }
 
 let setup_messages ~ext ~password ~value = 
   (digit_messages ~ext ~password) @ [value_message ~ext ~value]
   
 let auth_messages ~ext ~password = 
   List.map (fun digit ->
-    { src = ext.id; out_port = ext.output.auth_data; payload = digit }
+    { src = ext.id; out_port = ext.output.auth_data; payload = [digit] }
   ) password
   
 
@@ -67,8 +67,8 @@ let password_seq ~n ~l : int list Seq.t =
 
 let pp_schedule (schedule : Emu.Runtime.event list) : string =
   let lines = List.map (fun ev ->
-    Printf.sprintf "  { src = %d; out_port = %d; payload = %d }" 
-      ev.src ev.out_port ev.payload
+    Printf.sprintf "  { src = %d; out_port = %d; payload = %s }" 
+      ev.src ev.out_port (Emu.Payload.to_string ev.payload)
   ) schedule in
   "[\n" ^ (String.concat ";\n" lines) ^ "\n]"
 
@@ -78,6 +78,6 @@ let print_schedule ~label schedule =
 let print_schedule_compact ~label schedule =
   Printf.printf "%s: " label;
   List.iter (fun ev ->
-    Printf.printf "(%d→%d:%d) " ev.src ev.out_port ev.payload
+    Printf.printf "(%d→%d:%s) " ev.src ev.out_port (Emu.Payload.to_string ev.payload)
   ) schedule;
   Printf.printf "\n"

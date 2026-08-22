@@ -9,7 +9,7 @@ open Snapshot
 type event = {
   src      : int;
   out_port : int;
-  payload  : int;
+  payload  : Payload.t;
 }
 
 (* ------------------------------------------------------------- *)

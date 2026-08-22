@@ -123,9 +123,9 @@ let test_fibonacci_mod_network _ctx =
 
 let init_snap = Runtime.create net in
 
-(* One avalanche triggered by sending payload=1 to node B *)
+(* One avalanche triggered by sending payload=[1] to node B *)
 let schedule = [
-  { Runtime.src = nodeC.id; out_port = outC_ch1; payload = 1 };
+  { Runtime.src = nodeC.id; out_port = outC_ch1; payload = [1] };
 ] in
 
 let digest =

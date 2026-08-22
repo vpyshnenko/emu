@@ -75,7 +75,7 @@ let init_snap = Runtime.create net in
 
 (* One avalanche triggered by sending payload=1 to node B *)
 let schedule = [
-  { Runtime.src = nodeExt.id; out_port = 0; payload = 1 };
+  { Runtime.src = nodeExt.id; out_port = 0; payload = [1] };
 ] in
 
 let digest =

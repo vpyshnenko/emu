@@ -4,8 +4,8 @@ type t = {
   src_node : int;
   dest_node : int;
   in_port  : int;
-  payload  : int;
-  emitted  : (int * int) list;   (* (out_port, payload) *)
+  payload   : Payload.t;                 
+  emitted   : (int * Payload.t) list;   (* (out_port, payload) *)
   snapshot : Snapshot.t;
 }
 

@@ -38,9 +38,9 @@ let eval_normal
     (st : Stack.t)
     ~(mem : int array)
     ~(meta_mem : int array)
+	~(payload_buf : int array)        
     ~(regA : int ref)
-    ~(emit : int -> unit)
-    ~(out_port_count : int)
+    ~(emit : int -> Payload.t -> unit)
   : Stack.t =
   match instr with
   (* --- Stack operations --- *)
@@ -189,20 +189,23 @@ let eval_normal
   (* --- Emission instructions (emit regA) --- *)
   | Emit ->
       let idx = peek st in
-      if idx < 0 || idx >= out_port_count then
-        failwith "VM: Emit index out of bounds"
-      else (
-        emit idx;
-        st
-      )
+      emit idx [!regA];
+      st
 
   | EmitTo idx ->
-      if idx < 0 || idx >= out_port_count then
-        failwith "VM: EmitTo index out of bounds"
-      else (
-        emit idx;
-        st
-      )
+      emit idx [!regA];
+      st
+	  
+  | SendTo (out_port, count) ->
+    let packet, st' = Stack.pop_n st count in
+    emit out_port packet;
+    st'
+	
+  | LoadPayload idx ->
+      if idx < 0 || idx >= Array.length payload_buf then
+        failwith (Printf.sprintf "VM: LoadPayload index %d out of bounds (size=%d)" idx (Array.length payload_buf))
+      else
+        Stack.push payload_buf.(idx) st
 
   (* --- Control instructions should not reach here --- *)
   | Halt
@@ -222,9 +225,9 @@ let exec_instr
     (rest_code : instr list)  (* Remaining code after this instruction *)
     ~(mem : int array)
     ~(meta_mem : int array)
+	~(payload_buf : int array)        
     ~(regA : int ref)
-    ~(emit : int -> unit)
-    ~(out_port_count : int)
+    ~(emit : int -> Payload.t -> unit)
   : exec_result =
   match instr with
   (* --- Control instructions --- *)
@@ -259,7 +262,7 @@ let exec_instr
   (* --- Normal instructions --- *)
   | _ ->
       let st' =
-        eval_normal instr st ~mem ~meta_mem ~regA ~emit ~out_port_count
+        eval_normal instr st ~mem ~meta_mem ~payload_buf ~regA ~emit
       in
       { st = st'; control = Continue; remaining_code = rest_code }
 
@@ -272,10 +275,10 @@ let exec_program
     (state : State.t)
     (meta_info : int list)
     (code : instr list)
-    (payload : int)
-    (out_port_count : int)
-  : State.t * (int * int) list * bool
+    (payload : Payload.t)
+  : State.t * (int * Payload.t ) list * bool
   =
+  let payload_buf = Array.of_list payload in
   (* Convert node state list -> RAM array, padding if needed *)
   let mem =
     let len = List.length state in
@@ -288,19 +291,24 @@ let exec_program
 
   (* Convert meta_info list -> meta_mem array *)
   let meta_mem = Array.of_list meta_info in
-
+  (* let payload_buf = Array.of_list payload in *)
+  
   (* Register A starts with incoming payload *)
-  let regA = ref payload in
+  let regA = ref (
+    match payload with 
+    | head :: _ -> head 
+    | [] -> failwith "VM: Cannot execute program with an empty payload packet"
+  ) in
 
   (* Operational stack starts empty *)
   let st = Stack.create ~stack_capacity:vm.stack_capacity in
 
   (* Ordered program output buffer (Snoc) *)
-  let outputs_q : (int * int) Snoc.t = Snoc.create () in
+  let outputs_q : (int * Payload.t) Snoc.t = Snoc.create () in
 
   (* Emit closure appends directly into Snoc buffer *)
-  let emit idx =
-    Snoc.add outputs_q (idx, !regA)
+  let emit idx values =
+    Snoc.add outputs_q (idx, values)
   in
 
   let rec loop st remaining_code steps =
@@ -314,7 +322,7 @@ let exec_program
       | instr :: rest ->
           let result = 
             exec_instr st instr rest 
-              ~mem ~meta_mem ~regA ~emit ~out_port_count
+              ~mem ~meta_mem ~payload_buf ~regA ~emit
           in
           match result.control with
 		  | Halt ->

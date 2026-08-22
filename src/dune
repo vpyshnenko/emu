@@ -2,5 +2,5 @@
  (name emu)
  (public_name emu)
  (modules emu tool builder digest dlist instructions meta net node queue runtime
-          snapshot snoc stack state step vm)
+          snapshot snoc stack state step vm payload)
 )

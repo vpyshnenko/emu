@@ -12,14 +12,14 @@ let get_in_stream node_id port_id digest =
   
 let data_messages ~ext ~values = 
   List.map (fun value ->
-    { src = ext.id; out_port = ext.output.data; payload = value }
+    { src = ext.id; out_port = ext.output.data; payload = [value] }
   ) values
 
 let flush_message ~ext =
-  [ { src = ext.id; out_port = ext.output.flush; payload = 1 } ]
+  [ { src = ext.id; out_port = ext.output.flush; payload = [1] } ]
 
 let reset_message ~ext =
-  [ { src = ext.id; out_port = ext.output.reset; payload = 1 } ]
+  [ { src = ext.id; out_port = ext.output.reset; payload = [1] } ]
 
   
 

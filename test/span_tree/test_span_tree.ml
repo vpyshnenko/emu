@@ -36,8 +36,8 @@ let test_span_tree _ctx =
   (* Utils.print_routing_map net; *)
   let init_snap = Emu.Runtime.create net in
   let digest1 = Emu.Runtime.run init_snap ~schedule:[
-    { src = -1; out_port = 0; payload = 1 };
-    { src = -1; out_port = 1; payload = 1 };
+    { src = -1; out_port = 0; payload = [1] };
+    { src = -1; out_port = 1; payload = [1] };
   ] in
   let final_state = Digest.final_node_state ~node_id: root_id digest1 in
   Printf.printf "final_state: %s\n" (pp_list final_state)

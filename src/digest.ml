@@ -42,22 +42,26 @@ let node_in_stream_on_port ~node_id ~in_port (d : t) : int list =
   d.history
   |> List.filter (Step.matches_input ~node_id ~in_port)
   |> List.map Step.payload
+  |> List.flatten
   
 let node_in_stream_on_port_src ~node_id ~in_port (d : t) : int list =
   d.history
   |> List.filter (Step.matches_input ~node_id ~in_port)
   |> List.map Step.payload
+  |> List.flatten
 
 let node_in_stream ~node_id (d : t) : int list =
   d.history
   |> List.filter (Step.matches_in ~node_id)
   |> List.map Step.payload
+  |> List.flatten
 
 let print_in_stream ~label node_id (d: t) : unit = 
-  d.history
-  |> List.filter (Step.is_for_node ~node_id)
-  |> List.iteri (fun _ (ev: Step.t) ->
-        Printf.printf "%s: (src=%d; in_port=%d; val=%d)\n" label ev.src_node ev.in_port ev.payload)
+  d.history 
+  |> List.filter (Step.is_for_node ~node_id) 
+  |> List.iter (fun (ev: Step.t) -> 
+       Printf.printf "%s: (src=%d; in_port=%d; val=%s)\n" 
+         label ev.src_node ev.in_port (Payload.to_string ev.payload))
 
 (* ------------------------------------------------------------- *)
 (* Output stream (all outgoing ports)                            *)
@@ -69,14 +73,16 @@ let node_out_stream ~node_id (d : t) : int list =
   |> List.map Step.emitted
   |> List.flatten
   |> List.map snd
+  |> List.flatten
   
 let print_out_stream ~label node_id (d: t) : unit = 
-  d.history
-  |> List.filter (Step.is_for_node ~node_id)
-  |> List.map Step.emitted
-  |> List.flatten
-  |> List.iteri (fun _ (out_port_id, value) ->
-        Printf.printf "%s: (out_port=%d; val=%d)\n" label out_port_id value)
+  d.history 
+  |> List.filter (Step.is_for_node ~node_id) 
+  |> List.map Step.emitted 
+  |> List.flatten 
+  |> List.iter (fun (out_port_id, value) -> 
+       Printf.printf "%s: (out_port=%d; val=%s)\n" 
+         label out_port_id (Payload.to_string value))
 
   
 
@@ -91,6 +97,7 @@ let node_out_stream_on_port ~node_id ~out_port (d : t) : int list =
   |> List.flatten
   |> List.filter (fun (p, _) -> p = out_port)
   |> List.map snd
+  |> List.flatten
 
 (* ------------------------------------------------------------- *)
 (* Edge stream: values sent from src to dst                      *)
@@ -101,6 +108,7 @@ let node_edge_stream ~src ~dst (d : t) : int list =
   |> List.filter (fun step ->
        Step.src step = src && Step.dest step = dst)
   |> List.map Step.payload
+  |> List.flatten
 
 (* ------------------------------------------------------------- *)
 (* All values sent by a node (any port)                          *)
@@ -110,3 +118,5 @@ let node_sent_values ~node_id (d : t) : int list =
   d.history
   |> List.filter (fun step -> Step.src step = node_id)
   |> List.map Step.payload
+  |> List.flatten
+  

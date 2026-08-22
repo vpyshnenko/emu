@@ -1,0 +1,15 @@
+#require "emu";;
+#mod_use "utils.ml";;
+#mod_use "handlers.ml";;
+#mod_use "netbuilder.ml";;
+#use "sim.ml";;
+#use "explorer.ml";;
+
+(* Define a simple, non-blocking shortcut *)
+let go ?(root=1) () =
+  let digest = run root in
+  Explorer.explore digest
+;;
+print_endline "\n=== EMU REPL READY ===";
+print_endline "Type: go ()       (runs simulation with Root 0)";
+print_endline "Type: go ~root:3 () (runs simulation with Root 3)\n";;

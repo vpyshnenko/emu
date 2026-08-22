@@ -1,19 +1,5 @@
 open Emu.Instructions
-
-type mem = {
-  parent_node_id: int;
-  distance: int;
-  count: int;
-}
-
-
-let stp_out = 0
-
-let count_init_out = 1
-let count_out = 2
-
-let mem = { parent_node_id = 0; distance = 1; count = 2 }
-
+open Layout
 
 let stp_init = [
   (* 1. Set Parent Port to -1 (sentinel indicating "I am Root") *)
@@ -25,7 +11,7 @@ let stp_init = [
   Store mem.distance;                 (* RAM <- make root distance as 0 *)
   
   PopA;                    (* regA <- 0 *)
-  EmitTo stp_out;
+  EmitTo output.stp;
 ]
 
 let stp = [
@@ -51,14 +37,16 @@ let stp = [
       Store mem.distance;
 	  
       PeekA;
-	  EmitTo stp_out;
+	  EmitTo output.stp;
     ];
   |];
   Pop;
 ]
 
 let count_init = [
+LogMem;
   Load mem.count;
+  LogStack;
   GtPop 0;
   BranchOf [|
     [ Halt ]
@@ -68,17 +56,17 @@ let count_init = [
   Store mem.count;                 
   Pop;
   
+  LoadMeta NodeId;
   Load mem.parent_node_id;
-  PopA;
-  EmitTo count_out;
+  SendTo (output.count, 2);
   
   PushConst 1;
   PopA;
-  EmitTo count_init_out;
+  EmitTo output.count_init;
 ]
 
-let count_in = [
-  PushA;
+let count = [
+  LoadPayload 0;
   LoadMeta NodeId;
   Sub;
   NonEqPop 0;
@@ -88,8 +76,16 @@ let count_in = [
   Load mem.parent_node_id;
   EqPop (-1);
   BranchOf [|
-    [ Load mem.count; PushConst 1; Add; Store mem.count; ];
-	[ Load mem.parent_node_id; PeekA; EmitTo count_out; ]
+    [ 
+	  Load mem.count; PushConst 1; Add; Store mem.count; Pop;
+	  LoadPayload 1; Load mem.max_node_id; Sub; GtPop 0;
+	  BranchOf [| 
+	    [ LoadPayload 1; Store mem.max_node_id; Pop; ]
+      |];
+	  LogMem;
+	];
+	[ LoadMeta NodeId; Load mem.parent_node_id; SendTo (output.count, 2); ]
   |];
-  Pop;
 ]
+
+let handlers = make_handlers ~stp_init ~stp ~count_init ~count

@@ -2,6 +2,13 @@ open Emu
 
 let pp_list lst =
   "[" ^ (String.concat "; " (List.map string_of_int lst)) ^ "]"
+  
+let make_idx_gen init =
+  let next = ref init in
+  fun () ->
+    let current = !next in
+    incr next; (* Idiomatic OCaml helper for: next := !next + 1 *)
+    current
 
 (** Prints the entire global routing table of the network *)
 let print_routing_map (net : Net.t) : unit =

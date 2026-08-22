@@ -1,4 +1,5 @@
 open Emu
+open Layout
 
 module IntMap = Map.Make(Int)
 
@@ -23,25 +24,10 @@ let create () = {
   connections = [];
 }
 
-let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:3
-let state = [-1; max_int; 0]
+let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:4
+let state = [-1; max_int; 0; -1]
 
-let stp_init = 0
-let stp_in = 1
-let count_init = 2
-let count_in = 3
-
-let stp_out = 0
-let count_init_out = 1
-let count_out = 2
-
-
-let handlers =
-	Node.IntMap.empty
-	|> Node.IntMap.add stp_init Handlers.stp_init
-	|> Node.IntMap.add stp_in Handlers.stp
-	|> Node.IntMap.add count_init Handlers.count_init
-	|> Node.IntMap.add count_in Handlers.count_in
+let handlers = Handlers.handlers
 
 (* Adds a node, autoincrementing its ID and pre-registering Port 0 *)
 let add_node t =
@@ -62,12 +48,12 @@ let connect t idA idB =
   in
   
   (* Setup physical network connections *)
-  let stp_ab = { Net.from = (idA, stp_out); to_ = (idB, stp_in) } in
-  let stp_ba = { Net.from = (idB, stp_out); to_ = (idA, stp_in) } in
-  let count_init_ab = { Net.from = (idA, count_init_out); to_ = (idB, count_init) } in
-  let count_init_ba = { Net.from = (idB, count_init_out); to_ = (idA, count_init) } in
-  let count_ab = { Net.from = (idA, count_out); to_ = (idB, count_in) } in
-  let count_ba = { Net.from = (idB, count_out); to_ = (idA, count_in) } in
+  let stp_ab = { Net.from = (idA, output.stp); to_ = (idB, input.stp) } in
+  let stp_ba = { Net.from = (idB, output.stp); to_ = (idA, input.stp) } in
+  let count_init_ab = { Net.from = (idA, output.count_init); to_ = (idB, input.count_init) } in
+  let count_init_ba = { Net.from = (idB, output.count_init); to_ = (idA, input.count_init) } in
+  let count_ab = { Net.from = (idA, output.count); to_ = (idB, input.count) } in
+  let count_ba = { Net.from = (idB, output.count); to_ = (idA, input.count) } in
   t.connections <- (stp_ab, stp_ba, count_init_ab, count_init_ba, count_ab, count_ba) :: t.connections
 
 (* Compiles everything into a finalized Net.t instance *)
@@ -79,7 +65,7 @@ let finalize t root_id =
       ~state
       ~vm
       ~handlers
-      ~out_ports:[stp_out; count_init_out; count_out;]
+      ~out_ports: Layout.out_ports
       () 
     in
     Net.add_node node acc_net
@@ -106,8 +92,8 @@ let finalize t root_id =
   in
   
   Net.add_node ext_node net
-    |> Net.connect { from = (ext_node.id, 0); to_ = (root_id, stp_init) }
-    |> Net.connect { from = (ext_node.id, 1); to_ = (root_id, count_init) }
+    |> Net.connect { from = (ext_node.id, 0); to_ = (root_id, input.stp_init) }
+    |> Net.connect { from = (ext_node.id, 1); to_ = (root_id, input.count_init) }
   
   
   

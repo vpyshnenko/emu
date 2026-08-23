@@ -24,8 +24,8 @@ let create () = {
   connections = [];
 }
 
-let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:4
-let state = [-1; max_int; 0; -1]
+let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:5
+let state = [-1; max_int; 0; -1; -1]
 
 let handlers = Handlers.handlers
 

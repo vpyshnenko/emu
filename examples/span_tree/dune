@@ -1,0 +1,19 @@
+; examples/span_tree/dune
+
+(library
+ (name span_tree)
+ (wrapped false)
+ (libraries emu)
+ (modules layout handlers netbuilder))
+
+(executable
+ (name main)
+ (public_name emu-span-tree)
+ (libraries emu span_tree)
+ (modules main sim utils))
+
+(rule
+ (targets layout.ml)
+ (deps gen_layout.ml)
+ (action (run ocaml gen_layout.ml))
+ (mode promote))

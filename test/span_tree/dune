@@ -1,12 +1,6 @@
 (test
  (name test_span_tree)
- (libraries emu ounit2)
- (modules test_span_tree netbuilder handlers layout sim utils)
+ (libraries emu span_tree ounit2)
+ (modules test_span_tree sim utils)
   ;(enabled_if false)
 )
-
-(rule
- (targets layout.ml)
- (deps gen_layout.ml)
- (action (run ocaml gen_layout.ml))
- (mode promote)) 

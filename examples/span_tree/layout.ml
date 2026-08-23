@@ -5,6 +5,7 @@ type mem = {
   distance : int;
   count : int;
   max_node_id : int;
+  eccentricity : int;
 }
 
 let mem = {
@@ -12,6 +13,7 @@ let mem = {
   distance = 1;
   count = 2;
   max_node_id = 3;
+  eccentricity = 4;
 }
 
 type output = {
@@ -62,4 +64,4 @@ let string_of_output_port = function
   | 2 -> "count"
   | idx -> "port_" ^ string_of_int idx
 
-let mem_names = [ "parent_node_id"; "distance"; "count"; "max_node_id" ]
+let mem_names = [ "parent_node_id"; "distance"; "count"; "max_node_id"; "eccentricity" ]

@@ -1,0 +1,6 @@
+; tools/explorer/dune
+
+(library
+ (name emu_explorer)
+ (public_name emu.explorer)
+ (libraries emu))

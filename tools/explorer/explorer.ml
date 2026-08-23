@@ -18,6 +18,10 @@ module Make (Step : sig
   val payload : t -> int list
   val emitted : t -> (int * int list) list
   val snapshot : t -> Snapshot.t
+end) (Layout : sig
+  val string_of_input_port : int -> string
+  val string_of_output_port : int -> string
+  val mem_names : string list
 end) = struct
 
   let string_of_payload p =

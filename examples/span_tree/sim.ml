@@ -1,6 +1,6 @@
 open Emu
 
-let create_net ~root_id =
+let run root_id =
   let builder = Netbuilder.create () in
 
   (* 1. Declare nodes (IDs are autoincremented as 0, 1, 2, 3) *)
@@ -28,11 +28,8 @@ let create_net ~root_id =
   Netbuilder.connect builder n3 n7; (* Node 0 (Port 1) <-> Node 1 (Port 1) *)
   
   (* 3. Finalize into an executable network simulation *)
-  Netbuilder.finalize builder root_id
-
-let run ~root_id =
-  let net = create_net ~root_id in
-
+  let net = Netbuilder.finalize builder root_id in
+  
   (* Utils.print_routing_map net; *)
   let init_snap = Emu.Runtime.create net in
   let digest1 = Emu.Runtime.run init_snap ~schedule:[

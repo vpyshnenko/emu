@@ -1,0 +1,3 @@
+(library
+ (name emu)
+ (public_name emu))

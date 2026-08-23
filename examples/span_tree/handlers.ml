@@ -70,9 +70,11 @@ let count_init = [
   PushConst 1;
   Store mem.count;                          (* RAM[count] <- 1 *)
   Pop;
+
+  LoadMeta NodeId;                          (* Load our own node ID *)
+  Store mem.max_node_id;                    (* RAM[max_node_id] <- own_node_id *)
   
   (* Prepare counting report payload: [parent_node_id, my_node_id] *)
-  LoadMeta NodeId;                          (* Push our own node ID *)
   Load mem.parent_node_id;                  (* Push our parent's ID (this sits on top of the stack) *)
   SendTo (output.count, 2);                 (* Send a 2-word packet [parent_id, own_id] to parent *)
   

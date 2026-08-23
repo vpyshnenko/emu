@@ -8,4 +8,5 @@
 (rule
  (targets layout.ml)
  (deps gen_layout.ml)
- (action (run ocaml gen_layout.ml)))
+ (action (run ocaml gen_layout.ml))
+ (mode promote)) 

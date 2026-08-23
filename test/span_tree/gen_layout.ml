@@ -1,4 +1,4 @@
-(* gen_layout-v3.ml *)
+(* gen_layout-v4.ml *)
 let mem_fields = ["parent_node_id"; "distance"; "count"; "max_node_id"]
 let output_fields = ["stp"; "count_init"; "count"]
 let input_fields = ["stp_init"; "stp"; "count_init"; "count"]
@@ -30,5 +30,18 @@ let () =
     Printf.fprintf oc "  |> Emu.Node.IntMap.add input.%s %s\n" f f
   ) input_fields;
   Printf.fprintf oc "\n";
+
+  (* Generate port-to-string mapping functions *)
+  Printf.fprintf oc "let string_of_input_port = function\n";
+  List.iteri (fun i f -> Printf.fprintf oc "  | %d -> \"%s\"\n" i f) input_fields;
+  Printf.fprintf oc "  | idx -> \"port_\" ^ string_of_int idx\n\n";
+
+  Printf.fprintf oc "let string_of_output_port = function\n";
+  List.iteri (fun i f -> Printf.fprintf oc "  | %d -> \"%s\"\n" i f) output_fields;
+  Printf.fprintf oc "  | idx -> \"port_\" ^ string_of_int idx\n\n";
+
+  (* Generate mem_names string list *)
+  let mem_names_str = String.concat "; " (List.map (fun f -> "\"" ^ f ^ "\"") mem_fields) in
+  Printf.fprintf oc "let mem_names = [ %s ]\n" mem_names_str;
   
   close_out oc

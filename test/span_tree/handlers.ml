@@ -44,9 +44,7 @@ let stp = [
 ]
 
 let count_init = [
-LogMem;
   Load mem.count;
-  LogStack;
   GtPop 0;
   BranchOf [|
     [ Halt ]
@@ -82,9 +80,8 @@ let count = [
 	  BranchOf [| 
 	    [ LoadPayload 1; Store mem.max_node_id; Pop; ]
       |];
-	  LogMem;
 	];
-	[ LoadMeta NodeId; Load mem.parent_node_id; SendTo (output.count, 2); ]
+	[ LoadPayload 1; Load mem.parent_node_id; SendTo (output.count, 2); ]
   |];
 ]
 

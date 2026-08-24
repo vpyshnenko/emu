@@ -7,14 +7,7 @@ module IntMap = Map.Make(Int)
 type t = {
   mutable next_node_id : int;                         (* ID generator *)
   mutable nodes : unit IntMap.t;
-  mutable connections : (
-    Net.connection *
-	Net.connection *
-	Net.connection *
-	Net.connection *
-	Net.connection *
-	Net.connection
-  ) list;
+  mutable connections : Net.connection list;
 }
 
 (* Creates a builder starting with autoincremented Node IDs from 0 *)
@@ -37,6 +30,10 @@ let add_node t =
   id                          (* Return the autoincremented ID *)
 
 (* Connects two nodes symmetrically using a shared STP handler *)
+let add_connection t idA idB out_port in_port  =
+  let conn_ab = { Net.from = (idA, out_port); to_ = (idB, in_port) } in
+  let conn_ba = { Net.from = (idB, out_port); to_ = (idA, in_port) } in
+  t.connections <- conn_ab::conn_ba::t.connections
 let connect t idA idB =
   let _ = match IntMap.find_opt idA t.nodes with
     | Some n -> n
@@ -48,13 +45,9 @@ let connect t idA idB =
   in
   
   (* Setup physical network connections *)
-  let stp_ab = { Net.from = (idA, output.stp); to_ = (idB, input.stp) } in
-  let stp_ba = { Net.from = (idB, output.stp); to_ = (idA, input.stp) } in
-  let count_init_ab = { Net.from = (idA, output.count_init); to_ = (idB, input.count_init) } in
-  let count_init_ba = { Net.from = (idB, output.count_init); to_ = (idA, input.count_init) } in
-  let count_ab = { Net.from = (idA, output.count); to_ = (idB, input.count) } in
-  let count_ba = { Net.from = (idB, output.count); to_ = (idA, input.count) } in
-  t.connections <- (stp_ab, stp_ba, count_init_ab, count_init_ba, count_ab, count_ba) :: t.connections
+  add_connection t idA idB output.stp input.stp;
+  add_connection t idA idB output.count_init input.count_init;
+  add_connection t idA idB output.count input.count
 
 (* Compiles everything into a finalized Net.t instance *)
 let finalize t root_id =
@@ -72,14 +65,9 @@ let finalize t root_id =
   ) t.nodes (Net.create ()) in
 
   (* 2. Apply all connections to routing tables *)
-  let net = List.fold_left (fun acc_net (stp_ab, stp_ba, count_init_ab, count_init_ba, count_ab, count_ba) ->
+  let net = List.fold_left (fun acc_net connection ->
     acc_net 
-    |> Net.connect stp_ab 
-    |> Net.connect stp_ba
-    |> Net.connect count_init_ab
-    |> Net.connect count_init_ba
-    |> Net.connect count_ab
-    |> Net.connect count_ba
+    |> Net.connect connection 
   ) net t.connections in
   
   let ext_node = Node.create 

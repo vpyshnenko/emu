@@ -74,9 +74,11 @@ let count_init = [
   LoadMeta NodeId;                          (* Load our own node ID *)
   Store mem.max_node_id;                    (* RAM[max_node_id] <- own_node_id *)
   
-  (* Prepare counting report payload: [parent_node_id, my_node_id] *)
-  Load mem.parent_node_id;                  (* Push our parent's ID (this sits on top of the stack) *)
-  SendTo (output.count, 2);                 (* Send a 2-word packet [parent_id, own_id] to parent *)
+  (* Prepare counting report payload: [parent_node_id, my_node_id, distance] *)
+  Load mem.distance;
+  LoadMeta NodeId;
+  Load mem.parent_node_id;
+  SendTo (output.count, 3);                 (* Send [parent_id, own_id, distance] to parent *)
   
   (* Propagate the count initialization trigger down to our children *)
   PushConst 1;
@@ -122,13 +124,27 @@ let count = [
           Pop; 
         ]
       |];
+
+      (* The root's eccentricity is the greatest spanning-tree distance *)
+      LoadPayload 2;                        (* Payload[2] contains the reporting node's distance *)
+      Load mem.eccentricity;
+      Sub;
+      GtPop 0;                              (* If reported distance > current maximum, update it *)
+      BranchOf [|
+        [
+          LoadPayload 2;
+          Store mem.eccentricity;
+          Pop;
+        ]
+      |];
     ];
     (* --- CASE B: WE ARE A TRANSIT/MIDDLE NODE --- *)
     [ 
       (* Forward the reported node's ID up to our parent *)
+      LoadPayload 2;                        (* Payload[2] holds the reporting node's distance *)
       LoadPayload 1;                        (* Payload[1] holds the reporting node's ID *)
       Load mem.parent_node_id;              (* Load our parent's ID to address the packet *)
-      SendTo (output.count, 2);             (* Forward [parent_id, reported_id] to our parent *)
+      SendTo (output.count, 3);             (* Forward [parent_id, reported_id, distance] *)
     ]
   |];
 ]

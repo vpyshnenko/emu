@@ -46,7 +46,8 @@ let test_span_tree_linear _ctx =
       8 (List.nth final_state 3)
   done;
   Printf.printf "net radius =  %d\n" !net_radius;
-  assert_equal [8; 7; 6; 5; 4; 5; 6; 7; 8] (Snoc.to_list eccentricity_snock)
+  assert_equal [8; 7; 6; 5; 4; 5; 6; 7; 8] (Snoc.to_list eccentricity_snock);
+  assert_equal !net_radius 4
   
 
 let suite =

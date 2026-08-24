@@ -2,15 +2,14 @@
 
 (library
  (name span_tree)
- (wrapped false)
  (libraries emu)
- (modules layout handlers netbuilder))
+ (modules layout handlers netbuilder sim net))
 
 (executable
  (name main)
  (public_name emu-span-tree)
  (libraries emu span_tree)
- (modules main sim utils))
+ (modules main utils))
 
 (rule
  (targets layout.ml)

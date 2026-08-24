@@ -7,7 +7,7 @@ module IntMap = Map.Make(Int)
 type t = {
   mutable next_node_id : int;                         (* ID generator *)
   mutable nodes : unit IntMap.t;
-  mutable connections : Net.connection list;
+  mutable connections : Emu.Net.connection list;
 }
 
 (* Creates a builder starting with autoincremented Node IDs from 0 *)
@@ -31,8 +31,8 @@ let add_node t =
 
 (* Connects two nodes symmetrically using a shared STP handler *)
 let add_connection t idA idB out_port in_port  =
-  let conn_ab = { Net.from = (idA, out_port); to_ = (idB, in_port) } in
-  let conn_ba = { Net.from = (idB, out_port); to_ = (idA, in_port) } in
+  let conn_ab = { Emu.Net.from = (idA, out_port); to_ = (idB, in_port) } in
+  let conn_ba = { Emu.Net.from = (idB, out_port); to_ = (idA, in_port) } in
   t.connections <- conn_ab::conn_ba::t.connections
 let connect t idA idB =
   let _ = match IntMap.find_opt idA t.nodes with
@@ -50,7 +50,7 @@ let connect t idA idB =
   add_connection t idA idB output.count input.count
 
 (* Compiles everything into a finalized Net.t instance *)
-let finalize t root_id =
+let finalize t =
   (* 1. Instantiate and add all nodes to the network *)
   let net = IntMap.fold (fun id _val acc_net ->
     let node = Node.create 
@@ -61,15 +61,17 @@ let finalize t root_id =
       ~out_ports: Layout.out_ports
       () 
     in
-    Net.add_node node acc_net
-  ) t.nodes (Net.create ()) in
+    Emu.Net.add_node node acc_net
+  ) t.nodes (Emu.Net.create ()) in
 
   (* 2. Apply all connections to routing tables *)
-  let net = List.fold_left (fun acc_net connection ->
+  List.fold_left (fun acc_net connection ->
     acc_net 
-    |> Net.connect connection 
-  ) net t.connections in
-  
+    |> Emu.Net.connect connection 
+  ) net t.connections
+
+
+let attach_ext net root_id =  
   let ext_node = Node.create 
     ~id: (-1) 
     ~state:[] 
@@ -79,9 +81,9 @@ let finalize t root_id =
     ()
   in
   
-  Net.add_node ext_node net
-    |> Net.connect { from = (ext_node.id, 0); to_ = (root_id, input.stp_init) }
-    |> Net.connect { from = (ext_node.id, 1); to_ = (root_id, input.count_init) }
+  Emu.Net.add_node ext_node net
+    |> Emu.Net.connect { from = (ext_node.id, 0); to_ = (root_id, input.stp_init) }
+    |> Emu.Net.connect { from = (ext_node.id, 1); to_ = (root_id, input.count_init) }
   
   
   

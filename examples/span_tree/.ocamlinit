@@ -1,22 +1,17 @@
-#require "emu";;
-#mod_use "utils.ml";;
 #mod_use "layout.ml";;
-#mod_use "handlers.ml";;
-#mod_use "netbuilder.ml";;
 #use "../../tools/explorer/explorer.ml";;
 module Explorer = Make(Emu.Step)(Layout);;
-#use "sim.ml";;  
 
 (* Define a simple, non-blocking shortcut *)
 let explore ?(root=0) ?node () =
-  let digest = run root in
+  let digest = Span_tree.Sim.run root in
   Explorer.explore ?node digest
 ;;
 let go ?(root=0) () =
-  let digest = run root in
+  let digest = Span_tree.Sim.run root in
   Digest.final_node_state ~node_id:root digest
 ;;
-print_endline "\n=== EMU REPL READY ===";
+print_endline "\n=== EMU Explorer REPL READY ===";
 print_endline "Type: go ()       (runs simulation with Root 0)";
 print_endline "Type: go ~root:3 ()       (runs simulation with Root 3)";
 print_endline "Type: explore ~root:3 ~node:6 () (runs simulation with Root 3 and filters only Node 6 steps)\n";;

@@ -1,6 +1,6 @@
 (test
  (name test_span_tree)
  (libraries emu span_tree ounit2)
- (modules test_span_tree sim utils)
+ (modules test_span_tree utils)
   ;(enabled_if false)
 )

@@ -1,0 +1,18 @@
+; examples/ping_pong/dune
+
+(library
+ (name ping_pong)
+ (libraries emu)
+ (modules layout handlers netbuilder sim net))
+
+(executable
+ (name main)
+ (public_name emu-ping-pong)
+ (libraries emu ping_pong)
+ (modules main utils))
+
+(rule
+ (targets layout.ml)
+ (deps gen_layout.ml)
+ (action (run ocaml gen_layout.ml))
+ (mode promote))

@@ -1,0 +1,15 @@
+#mod_use "layout.ml";;
+#use "../../tools/explorer/explorer.ml";;
+module Explorer = Make(Emu.Step)(Layout);;
+
+(* Define a simple, non-blocking shortcut *)
+let explore nodeA nodeB node =
+  let digest = Ping_pong.Sim.run nodeA nodeB in
+  Explorer.explore ?node digest
+;;
+let ping nodeA nodeB =
+  let digest = Ping_pong.Sim.run nodeA nodeB in
+  Digest.print_out_stream ~label:"nodeA out stream" nodeA_id digest
+;;
+print_endline "\n=== EMU Explorer REPL READY ===";
+print_endline "Type: ping 0 4       (runs simulation for Node0 ping Node4)"

@@ -2,7 +2,7 @@
 # Usage
 # ./concat.ps1
 param(
-    [string]$SourceDir = "src",
+    [string]$SourceDir = "lib",
     [string]$OutputFile = "concatenated_modules.ml",
     [switch]$IncludeTimestamps = $true,
     [switch]$Verbose

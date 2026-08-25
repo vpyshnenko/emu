@@ -12,6 +12,8 @@ type event = {
   payload  : Payload.t;
 }
 
+exception AvalancheLimitExceeded of Snapshot.t
+
 (* ------------------------------------------------------------- *)
 (* Create initial snapshot                                       *)
 (* ------------------------------------------------------------- *)
@@ -109,12 +111,13 @@ let run_avalanche
   =
   let rec loop steps_remaining snap =
     if steps_remaining <= 0 then
-      failwith "AVALANCHE: Maximum steps exceeded - possible infinite loop";
-    
-    match make_step ~history snap with
-    | None -> snap
-    | Some (snap', _steps) ->
-        loop (steps_remaining - 1) snap'
+      (* failwith "AVALANCHE: Maximum steps exceeded - possible infinite loop"; *)
+	  raise (AvalancheLimitExceeded snap)
+    else
+      match make_step ~history snap with
+      | None -> snap
+      | Some (snap', _steps) ->
+          loop (steps_remaining - 1) snap'
   in
   loop max_steps snap
 
@@ -146,17 +149,24 @@ let rec run_avalanches
       Net.validate_emit_source snap.net ev.src ev.out_port;
 
       let snap = enqueue ev snap in
-      let snap = run_avalanche ~history snap in
-
-      (* termination check *)
-      match stop_when with
-      | Some f when f snap ->
-          Digest.make
-            ~initial_snapshot
-            ~final_snapshot:snap
-            ~history
-      | _ ->
-          run_avalanches ?stop_when ~initial_snapshot ~history snap rest
+	  try
+        let snap = run_avalanche ~history snap in
+	    
+        (* termination check *)
+        match stop_when with
+        | Some f when f snap ->
+            Digest.make
+              ~initial_snapshot
+              ~final_snapshot:snap
+              ~history
+        | _ ->
+            run_avalanches ?stop_when ~initial_snapshot ~history snap rest
+	  with AvalancheLimitExceeded partial_snap ->
+	    Printf.eprintf "\n\x1b[1;31m[EMU RUNTIME ERROR] AVALANCHE: Maximum steps exceeded - possible infinite loop!\x1b[0m\n";
+        Printf.eprintf "Simulation was halted. Returning the partial execution history (%d steps) for debugging.\n\n" (List.length (Snoc.to_list history));
+        flush stderr;
+        (* Gracefully return the partial digest gathered so far! *)
+        Digest.make ~initial_snapshot ~final_snapshot:partial_snap ~history
 
 (* ------------------------------------------------------------- *)
 (* Public API                                                    *)

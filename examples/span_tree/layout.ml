@@ -1,6 +1,7 @@
 (* Generated automatically by gen_layout.ml. Do not edit manually! *)
 
 type mem = {
+  epoch_id : int;
   parent_node_id : int;
   distance : int;
   count : int;
@@ -9,11 +10,12 @@ type mem = {
 }
 
 let mem = {
-  parent_node_id = 0;
-  distance = 1;
-  count = 2;
-  max_node_id = 3;
-  eccentricity = 4;
+  epoch_id = 0;
+  parent_node_id = 1;
+  distance = 2;
+  count = 3;
+  max_node_id = 4;
+  eccentricity = 5;
 }
 
 type output = {
@@ -64,4 +66,4 @@ let string_of_output_port = function
   | 2 -> "count"
   | idx -> "port_" ^ string_of_int idx
 
-let mem_names = [ "parent_node_id"; "distance"; "count"; "max_node_id"; "eccentricity" ]
+let mem_names = [ "epoch_id"; "parent_node_id"; "distance"; "count"; "max_node_id"; "eccentricity" ]

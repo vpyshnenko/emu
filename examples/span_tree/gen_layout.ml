@@ -1,5 +1,5 @@
 (* gen_layout-v4.ml *)
-let mem_fields = ["parent_node_id"; "distance"; "count"; "max_node_id"; "eccentricity"]
+let mem_fields = ["epoch_id"; "parent_node_id"; "distance"; "count"; "max_node_id"; "eccentricity"]
 let output_fields = ["stp"; "count_init"; "count"]
 let input_fields = ["stp_init"; "stp"; "count_init"; "count"]
 

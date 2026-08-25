@@ -59,12 +59,16 @@ let stp = [
    3. COUNT INIT HANDLER: Initiates the counting phase from the Root.
    ========================================================================= *)
 let count_init = [
-  (* Guard check: Prevent multiple counts if a node receives duplicate count_init messages *)
-  Load mem.count;                           (* Load current local count *)
-  GtPop 0;                                  (* If count > 0, push True (1), else False (0) *)
+  (* Guard check incoming epoch_id to be newer to prevent handling duplicates *)
+  PushA;
+  Dup;
+  Load mem.epoch_id;
+  Sub;
+  LePop 0;
   BranchOf [|
-    [ Halt ]                                (* Already initialized! Stop execution *)
+    [ Halt ]                               
   |];
+  Store mem.epoch_id; Pop;
   
   (* Mark this node as counted (local count = 1) aka guard flag *)
   PushConst 1;
@@ -81,9 +85,8 @@ let count_init = [
   SendTo (output.count, 3);                 (* Send [parent_id, own_id, distance] to parent *)
   
   (* Propagate the count initialization trigger down to our children *)
-  PushConst 1;
-  PopA;                                     (* Put active trigger status in Register A *)
-  EmitTo output.count_init;                 (* Propagate down through count_init port *)
+  Load mem.epoch_id;
+  SendTo (output.count_init, 1); 
 ]
 
 (* =========================================================================

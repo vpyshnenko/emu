@@ -4,16 +4,20 @@ open Utils
 open Emu
 open Span_tree
 
+let run net root_id = 
+    let init_snap = Emu.Runtime.create net in
+    let digest = Emu.Runtime.run init_snap ~schedule:[
+      { src = -1; out_port = Layout.output.stp; payload = [1] };
+      { src = -1; out_port = Layout.output.count_init; payload = [1] };
+      { src = -1; out_port = Layout.output.count_init; payload = [2] };
+    ] in
+    Emu.Digest.final_node_state ~node_id:root_id digest
+	
 let test_span_tree_cycle _ctx =
   let node_count = Emu.Net.size Net.cycle_net in 
   for root_id = 0 to node_count - 1 do
     let net = Netbuilder.attach_ext Net.cycle_net root_id in
-    let init_snap = Emu.Runtime.create net in
-    let digest = Emu.Runtime.run init_snap ~schedule:[
-      { src = -1; out_port = 0; payload = [1] };
-      { src = -1; out_port = 1; payload = [1] };
-    ] in
-    let final_state = Emu.Digest.final_node_state ~node_id:root_id digest in
+    let final_state = run net root_id in
     Printf.printf "root %d final_state: %s\n" root_id (pp_list final_state);
     assert_equal ~msg:(Printf.sprintf "root %d count" root_id)
       8 (List.nth final_state Layout.mem.count);
@@ -30,12 +34,7 @@ let test_span_tree_linear _ctx =
   let net_radius = ref max_int in
   for root_id = 0 to node_count - 1 do
     let net = Netbuilder.attach_ext Net.linear_net root_id in
-    let init_snap = Emu.Runtime.create net in
-    let digest = Emu.Runtime.run init_snap ~schedule:[
-      { src = -1; out_port = 0; payload = [1] };
-      { src = -1; out_port = 1; payload = [1] };
-    ] in
-    let final_state = Emu.Digest.final_node_state ~node_id:root_id digest in
+    let final_state = run net root_id in
 	let eccentricity = List.nth final_state Layout.mem.eccentricity in
 	if eccentricity < !net_radius then
 	  net_radius := eccentricity;

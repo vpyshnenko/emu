@@ -17,8 +17,8 @@ let create () = {
   connections = [];
 }
 
-let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:5
-let state = [-1; max_int; 0; -1; -1]
+let state = [0; -1; max_int; 0; -1; -1]
+let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
 
 let handlers = Handlers.handlers
 
@@ -77,13 +77,13 @@ let attach_ext net root_id =
     ~state:[] 
     ~vm:Vm.empty
     ~handlers:Node.IntMap.empty
-    ~out_ports: [0; 1]
+    ~out_ports: [output.stp; output.count_init]
     ()
   in
   
   Emu.Net.add_node ext_node net
-    |> Emu.Net.connect { from = (ext_node.id, 0); to_ = (root_id, input.stp_init) }
-    |> Emu.Net.connect { from = (ext_node.id, 1); to_ = (root_id, input.count_init) }
+    |> Emu.Net.connect { from = (ext_node.id, output.stp); to_ = (root_id, input.stp_init) }
+    |> Emu.Net.connect { from = (ext_node.id, output.count_init); to_ = (root_id, input.count_init) }
   
   
   

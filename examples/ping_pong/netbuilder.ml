@@ -17,7 +17,7 @@ let create () = {
   connections = [];
 }
 
-let state = []
+let state = [0]
 let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
 
 let handlers = Handlers.handlers
@@ -46,8 +46,7 @@ let connect t idA idB =
   in
   
   (* Setup physical network connections *)
-  add_connection t idA idB output.ping input.ping;
-  add_connection t idA idB output.pong input.pong
+  add_connection t idA idB output.tx input.rx
 
 (* Compiles everything into a finalized Net.t instance *)
 let finalize t =
@@ -78,12 +77,12 @@ let attach_ext net node_id =
     ~state:[] 
     ~vm:Vm.empty
     ~handlers:Node.IntMap.empty
-    ~out_ports: [output.ping]
+    ~out_ports: [0]
     ()
   in
   
   Emu.Net.add_node ext_node net
-    |> Emu.Net.connect { from = (ext_node_id, output.ping); to_ = (node_id, input.ping_init) }
+    |> Emu.Net.connect { from = (ext_node_id, 0); to_ = (node_id, input.send) }
   
   
   

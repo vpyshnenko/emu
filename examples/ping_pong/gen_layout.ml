@@ -1,7 +1,7 @@
 (* gen_layout-v4.ml *)
-let mem_fields = ["status"]
-let output_fields = ["ping"; "pong"; "ok"]
-let input_fields = ["ping_init"; "ping"; "pong"; ]
+let mem_fields = ["seqId"]
+let output_fields = ["tx"; "data"]
+let input_fields = ["send"; "rx";]
 
 let generate_type_and_val name fields oc =
   Printf.fprintf oc "type %s = {\n" name;

@@ -71,18 +71,41 @@ let finalize t =
 
 let ext_node_id = (-1)
 
-let attach_ext net node_id =  
-  let ext_node = Node.create 
-    ~id: ext_node_id 
-    ~state:[] 
-    ~vm:Vm.empty
-    ~handlers:Node.IntMap.empty
-    ~out_ports: [0]
-    ()
-  in
+(* Connects send triggers 1-to-1 AND binds all node 'data' outports back to ext_node *)
+let ext_input_data = 0
+
+let attach_ext (net : Emu.Net.t) =
+  (* 1. Gather all active node IDs from the network *)
+  let node_ids = IntMap.bindings net.nodes |> List.map (fun (id, _) -> id) in
   
-  Emu.Net.add_node ext_node net
-    |> Emu.Net.connect { from = (ext_node_id, 0); to_ = (node_id, input.send) }
+  (* 2. Only ONE empty handler registered on port 0 for ALL incoming feedback *)
+  let ext_handlers = Emu.Node.IntMap.singleton ext_input_data [] in
+
+  (* 3. Create the ext_node with a single feedback handler *)
+  let ext_node = Node.create 
+    ~id:ext_node_id 
+    ~state:[] 
+    ~vm:(Vm.create ~stack_capacity:10 ~max_steps:10 ~mem_size:0)
+    ~handlers:ext_handlers 
+    ~out_ports:node_ids 
+    () 
+  in
+  let net_with_ext = Emu.Net.add_node ext_node net in
+  
+  (* 4. Symmetrically wire the control plane and the shared feedback plane *)
+  IntMap.fold (fun node_id _node acc_net ->
+    acc_net
+    (* CONTROL LINE: ext_node (dedicated port node_id) -> node (input.send) *)
+    |> Emu.Net.connect { 
+         from = (ext_node_id, node_id); 
+         to_ = (node_id, input.send) 
+       }
+    (* FEEDBACK LINE: node (output.data) -> ext_node (shared ext_input_data 0) *)
+    |> Emu.Net.connect { 
+         from = (node_id, output.data); 
+         to_ = (ext_node_id, ext_input_data) 
+       }
+  ) net.nodes net_with_ext
   
   
   

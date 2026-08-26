@@ -20,7 +20,8 @@ let create () = {
 let state = [0]
 let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
 
-let handlers = Handlers.handlers
+(* let handlers = Handlers.handlers *)
+let handlers = Handlers_flood.handlers
 
 (* Adds a node, autoincrementing its ID and pre-registering Port 0 *)
 let add_node t =

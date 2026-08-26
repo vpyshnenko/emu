@@ -3,7 +3,7 @@
 (library
  (name ping_pong)
  (libraries emu)
- (modules layout handlers netbuilder sim net))
+ (modules layout handlers handlers_flood netbuilder sim net))
 
 (executable
  (name main)

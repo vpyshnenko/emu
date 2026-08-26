@@ -65,14 +65,12 @@ let rx = [
       LoadPayload 1;                        (* Push DestNodeId *)
       LoadPayload 0;                        (* Push SeqId *)
       SendTo (output.tx, 3);                (* Keep transmitting over 'tx' [4] *)
-      Halt;
     ];
     (* Branch 1: TARGET REACHED! Success! [8] *)
     [
       LoadPayload 2;                        (* Push Val (payload index 2) *)
       PopA;                                 (* Store Val in Register A [2] *)
       EmitTo output.data;                   (* Emit Register A content on 'data' port [4] *)
-      Halt;
     ]
   |];
 ]

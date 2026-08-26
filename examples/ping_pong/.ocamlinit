@@ -3,15 +3,20 @@
 module Explorer = Make(Emu.Step)(Layout);;
 
 (* Define a simple, non-blocking shortcut *)
-let explore nodeA nodeB value ?node () =
-  let digest = Ping_pong.Sim.run nodeA nodeB value in
+let explore n ?node () =
+  let digest = Ping_pong.Sim.run n in
   Explorer.explore ?node digest
 ;;
-let send nodeA nodeB value =
-  let digest = Ping_pong.Sim.run nodeA nodeB value in
-  Digest.print_out_stream ~label:"dest node out stream" nodeB digest
+
+let em n =
+  let digest = Ping_pong.Sim.run n in
+  match Ping_pong.Sim.first_emission_step ~out_port:Layout.output.data digest with
+  | Some step_idx -> 
+      Printf.printf "Success! First delivery to data port occurred at step %d\n" step_idx
+  | None -> 
+      Printf.printf "Failure: No data was ever delivered to the target.\n"
 ;;
+
 print_endline "\n=== EMU Explorer REPL READY ===";
-print_endline "Type: send 0 4 42      (runs simulation for sending 42 from Node0 to Node4)";
-print_endline "Type: explore 0 4 42 ()      (to explore the entire history of simulation for Node0 ping Node4)";
-print_endline "Type: explore 0 4 42 2 ()      (to explore history of steps only for Node2)"
+print_endline "Type: explore 4 ()    (to explore the entire history of simulation)";
+print_endline "Type: explore 4 2 ()      (to explore history of steps only for Node2)"

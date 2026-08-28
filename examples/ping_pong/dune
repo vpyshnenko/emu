@@ -3,13 +3,13 @@
 (library
  (name ping_pong)
  (libraries emu)
- (modules layout handlers handlers_flood netbuilder sim net))
+ (modules layout handlers handlers_flood netbuilder sim net utils))
 
 (executable
  (name main)
  (public_name emu-ping-pong)
  (libraries emu ping_pong)
- (modules main utils))
+ (modules main))
 
 (rule
  (targets layout.ml)

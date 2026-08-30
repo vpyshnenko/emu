@@ -1,22 +1,20 @@
 #mod_use "layout.ml";;
+#mod_use "handlers.ml";;
+#mod_use "netbuilder.ml";;
+#mod_use "sim.ml";;
 #use "../../tools/explorer/explorer.ml";;
 module Explorer = Make(Emu.Step)(Layout);;
 
-(* Define a simple, non-blocking shortcut *)
-let explore n ?node () =
-  let digest = Ping_pong.Sim.run n in
+
+let explore digest ?node () =
   Explorer.explore ?node digest
 ;;
 
-let em n =
-  let digest = Ping_pong.Sim.run n in
-  match Ping_pong.Sim.first_emission_step ~out_port:Layout.output.data digest with
-  | Some step_idx -> 
-      Printf.printf "Success! First delivery to data port occurred at step %d\n" step_idx
-  | None -> 
-      Printf.printf "Failure: No data was ever delivered to the target.\n"
+
+let send a b value = 
+  Sim.send a b value
 ;;
 
+
 print_endline "\n=== EMU Explorer REPL READY ===";
-print_endline "Type: explore 4 ()    (to explore the entire history of simulation)";
-print_endline "Type: explore 4 2 ()      (to explore history of steps only for Node2)"
+print_endline "Type: send 2 5 42"

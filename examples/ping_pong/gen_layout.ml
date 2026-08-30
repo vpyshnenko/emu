@@ -1,7 +1,7 @@
-(* gen_layout-v4.ml *)
-let mem_fields = ["seqId"]
-let output_fields = ["tx"; "data"]
-let input_fields = ["send"; "rx";]
+(* gen_layout.ml *)
+let mem_fields = ["leader_id"; "seq_id"; "distance";]
+let output_fields = ["stp"; "root_tx"; "tx"; "data"]
+let input_fields = ["stp_init"; "stp"; "root_rx"; "send"; "rx";]
 
 let generate_type_and_val name fields oc =
   Printf.fprintf oc "type %s = {\n" name;
@@ -15,6 +15,14 @@ let () =
   let oc = open_out "layout.ml" in
   Printf.fprintf oc "(* Generated automatically by gen_layout.ml. Do not edit manually! *)\n\n";
   generate_type_and_val "mem" mem_fields oc;
+  
+  (* === АВТОГЕНЕРАЦИЯ ФУНКЦИИ TO_STATE === *)
+  let fields_access = List.map (fun f -> "mem_values." ^ f) mem_fields in
+  let list_str = String.concat "; " fields_access in
+  Printf.fprintf oc "let to_state (mem_values : mem) : int list =\n" ;
+  Printf.fprintf oc "  [ %s ]\n\n" list_str;
+  (* ====================================== *)
+
   generate_type_and_val "output" output_fields oc;
   
   let ports_str = String.concat "; " (List.map (fun f -> "output." ^ f) output_fields) in

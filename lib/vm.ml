@@ -2,6 +2,7 @@
 
 open Instructions
 open Stack
+open Errors
 
 (* ------------------------------------------------------------ *)
 (* VM configuration                                             *)
@@ -206,6 +207,7 @@ let eval_normal
         failwith (Printf.sprintf "VM: LoadPayload index %d out of bounds (size=%d)" idx (Array.length payload_buf))
       else
         Stack.push payload_buf.(idx) st
+  | Fail -> failwith "VM: Fail operation"
 
   (* --- Control instructions should not reach here --- *)
   | Halt
@@ -312,7 +314,7 @@ let exec_program
   in
 
   let rec loop st remaining_code steps =
-    if steps >= vm.max_steps then
+    if steps > vm.max_steps then
       failwith "VM: max_steps limit exceeded"
     else
       match remaining_code with
@@ -320,9 +322,10 @@ let exec_program
           (* No more code to execute *)
           (st, false)
       | instr :: rest ->
-          let result = 
-            exec_instr st instr rest 
-              ~mem ~meta_mem ~payload_buf ~regA ~emit
+          let result =
+            try exec_instr st instr rest ~mem ~meta_mem ~payload_buf ~regA ~emit with
+            | Failure msg -> raise (Emu_Vm_Exec_Error (steps, instr, msg))
+            | exn -> raise (Emu_Vm_Exec_Error (steps, instr, Printexc.to_string exn))
           in
           match result.control with
 		  | Halt ->

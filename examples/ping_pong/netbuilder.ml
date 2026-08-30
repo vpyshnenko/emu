@@ -17,11 +17,11 @@ let create () = {
   connections = [];
 }
 
-let state = [0]
+let state = Layout.to_state {leader_id = (-1); distance = max_int; seq_id = 0;}
 let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
 
-(* let handlers = Handlers.handlers *)
-let handlers = Handlers_flood.handlers
+let handlers = Handlers.handlers
+(* let handlers = Handlers_flood.handlers *)
 
 (* Adds a node, autoincrementing its ID and pre-registering Port 0 *)
 let add_node t =
@@ -47,7 +47,9 @@ let connect t idA idB =
   in
   
   (* Setup physical network connections *)
-  add_connection t idA idB output.tx input.rx
+  add_connection t idA idB output.tx input.rx;
+  add_connection t idA idB output.root_tx input.root_rx;
+  add_connection t idA idB output.stp input.stp
 
 (* Compiles everything into a finalized Net.t instance *)
 let finalize t =
@@ -70,44 +72,61 @@ let finalize t =
     |> Emu.Net.connect connection 
   ) net t.connections
 
-let ext_node_id = (-1)
-
-(* Connects send triggers 1-to-1 AND binds all node 'data' outports back to ext_node *)
+let ext_id = (-1)
 let ext_input_data = 0
+
+let ext_stp_id = (-2)
+
 
 let attach_ext (net : Emu.Net.t) =
   (* 1. Gather all active node IDs from the network *)
   let node_ids = IntMap.bindings net.nodes |> List.map (fun (id, _) -> id) in
   
-  (* 2. Only ONE empty handler registered on port 0 for ALL incoming feedback *)
-  let ext_handlers = Emu.Node.IntMap.singleton ext_input_data [] in
-
-  (* 3. Create the ext_node with a single feedback handler *)
   let ext_node = Node.create 
-    ~id:ext_node_id 
+    ~id:ext_id 
     ~state:[] 
-    ~vm:(Vm.create ~stack_capacity:10 ~max_steps:10 ~mem_size:0)
-    ~handlers:ext_handlers 
+    ~vm:Vm.empty
+  (* Only ONE empty handler registered on port 0 for ALL incoming feedback *)
+    ~handlers:(Node.IntMap.singleton ext_input_data [])
+    (* ~handlers:Node.IntMap.empty *)
     ~out_ports:node_ids 
-    () 
+    ()
   in
-  let net_with_ext = Emu.Net.add_node ext_node net in
-  
+
+  let ext_node_stp = Node.create 
+    ~id:ext_stp_id
+    ~state:[] 
+    ~vm: Vm.empty
+    ~handlers:Node.IntMap.empty
+    ~out_ports:node_ids 
+    ()
+  in
+  net
+  |> Emu.Net.add_node ext_node
   (* 4. Symmetrically wire the control plane and the shared feedback plane *)
-  IntMap.fold (fun node_id _node acc_net ->
+  |> IntMap.fold (fun node_id _node acc_net ->
     acc_net
     (* CONTROL LINE: ext_node (dedicated port node_id) -> node (input.send) *)
     |> Emu.Net.connect { 
-         from = (ext_node_id, node_id); 
+         from = (ext_id, node_id); 
          to_ = (node_id, input.send) 
        }
     (* FEEDBACK LINE: node (output.data) -> ext_node (shared ext_input_data 0) *)
+    (* Connects send triggers 1-to-1 AND binds all node 'data' outports back to ext_node *)
     |> Emu.Net.connect { 
          from = (node_id, output.data); 
-         to_ = (ext_node_id, ext_input_data) 
+         to_ = (ext_id, ext_input_data) 
        }
-  ) net.nodes net_with_ext
-  
+  ) net.nodes
+  |> Emu.Net.add_node ext_node_stp
+  |> IntMap.fold (fun node_id _node acc_net ->
+    acc_net
+    (* CONTROL LINE: ext_node (dedicated port node_id) -> node (input.send) *)
+    |> Emu.Net.connect { 
+         from = (ext_stp_id, node_id); 
+         to_ = (node_id, input.stp_init) 
+       }
+  ) net.nodes
   
   
   

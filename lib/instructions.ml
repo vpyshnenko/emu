@@ -43,6 +43,9 @@ type instr =
   | EmitTo of int         (* send regA content to port by index *)
   | LoadPayload of int    (* load payload element by index *)
   | SendTo of int * int   (* send to (out_port, n stack entries) *)
+
+  | Fail (* fail on purpose *)
+  
   
   (* Control flow *)
   | Halt (* early return *)
@@ -50,3 +53,41 @@ type instr =
   | BranchOf of instr list array
   | Loop of instr list 
   
+let string_of_instr = function
+  | Dup -> "Dup"
+  | Pop -> "Pop"
+  | PushConst n -> Printf.sprintf "PushConst %d" n
+  | Add -> "Add"
+  | AddMod -> "AddMod"
+  | Sub -> "Sub"
+  | Shl -> "Shl"
+  | Shr -> "Shr"
+  | LogStack -> "LogStack"
+  | LogMem -> "LogMem"
+  | Eq x -> Printf.sprintf "Eq %d" x
+  | NonEq x -> Printf.sprintf "NonEq %d" x
+  | Gt x -> Printf.sprintf "Gt %d" x
+  | Lt x -> Printf.sprintf "Lt %d" x
+  | Ge x -> Printf.sprintf "Ge %d" x
+  | Le x -> Printf.sprintf "Le %d" x
+  | EqPop x -> Printf.sprintf "EqPop %d" x
+  | NonEqPop x -> Printf.sprintf "NonEqPop %d" x
+  | GtPop x -> Printf.sprintf "GtPop %d" x
+  | LtPop x -> Printf.sprintf "LtPop %d" x
+  | GePop x -> Printf.sprintf "GePop %d" x
+  | LePop x -> Printf.sprintf "LePop %d" x
+  | PushA -> "PushA"
+  | PopA -> "PopA"
+  | PeekA -> "PeekA"
+  | Load i -> Printf.sprintf "Load %d" i
+  | Store i -> Printf.sprintf "Store %d" i
+  | LoadMeta _ -> "LoadMeta"
+  | Emit -> "Emit"
+  | EmitTo i -> Printf.sprintf "EmitTo %d" i
+  | LoadPayload idx -> Printf.sprintf "LoadPayload %d" idx
+  | SendTo (p, c) -> Printf.sprintf "SendTo (%d, %d)" p c
+  | Fail -> "Fail"
+  | Halt -> "Halt"
+  | Shutdown -> "Shutdown"
+  | BranchOf _ -> "BranchOf [...]"
+  | Loop _ -> "Loop [...]"

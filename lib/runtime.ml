@@ -1,6 +1,6 @@
 (* runtime.ml *)
-
 open Snapshot
+open Errors
 
 (* ------------------------------------------------------------- *)
 (* Unified event type                                            *)
@@ -37,6 +37,16 @@ let enqueue (ev : event) (snap : Snapshot.t) : Snapshot.t =
 (*   (no reversal; list order is internal accumulation order)    *)
 (* ------------------------------------------------------------- *)
 
+let deliver_to_subscriber snap ev dst_id in_port =
+  let net_after, outs = Net.deliver snap.net ev.src dst_id in_port ev.payload in
+  let queue' = List.fold_left (fun q (out_p, out_payload) -> 
+    Queue.enqueue (dst_id, out_p, out_payload) q
+  ) snap.queue outs in
+  let snap' = Snapshot.with_net snap net_after |> Snapshot.with_queue queue' in
+  let step = Step.make ~src_node:ev.src ~dest_node:dst_id ~in_port ~payload:ev.payload ~emitted:outs ~snapshot:snap' in
+  (snap', step)
+  
+
 let deliver_event
     ~(history : Step.t Snoc.t)
     (snap : Snapshot.t)
@@ -47,39 +57,15 @@ let deliver_event
 
   List.fold_left
     (fun (snap, steps_acc) (dst_id, in_port) ->
-       let net_after, outs =
-         Net.deliver snap.net ev.src dst_id in_port ev.payload
-       in
-
-       let snap = Snapshot.with_net snap net_after in
-
-       (* Preserve handler emission order when enqueuing into the global FIFO. *)
-       let snap =
-         List.fold_left
-           (fun snap (out_p, v) ->
-              enqueue { src = dst_id; out_port = out_p; payload = v } snap)
-           snap
-           outs
-       in
-
-       let step =
-         Step.make
-           ~src_node:ev.src
-           ~dest_node:dst_id
-           ~in_port
-           ~payload:ev.payload
-           ~emitted:outs
-           ~snapshot:snap
-       in
-
-       (* Global chronological history *)
+	 try
+       let snap', step = deliver_to_subscriber snap ev dst_id in_port in
        Snoc.add history step;
-
        (* Per-event debug steps list (kept simple; not reversed into chronological) *)
-       (snap, step :: steps_acc)
-    )
-    (snap, [])
-    subscribers
+       (snap', step :: steps_acc)
+	 with exn ->
+      handle_delivery_error dst_id in_port ev.src ev.payload exn
+
+    ) (snap, []) subscribers
 
 (* ------------------------------------------------------------- *)
 (* One internal step                                             *)

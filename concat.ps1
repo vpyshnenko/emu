@@ -2,8 +2,8 @@
 # Usage
 # ./concat.ps1
 param(
-    # [string]$SourceDir = "lib",
-    [string]$SourceDir = "examples\ping_pong",
+    [string]$SourceDir = "lib",
+    # [string]$SourceDir = "examples\ping_pong",
     [string]$OutputFile = "concatenated_modules.ml",
     [switch]$IncludeTimestamps = $true,
     [switch]$Verbose
@@ -27,16 +27,16 @@ $modules = @(
     "step.ml"
 )
 
-$modules = @(
-    "gen_layout.ml",
-    "handlers.ml",
-    "layout.ml",
-    "net.ml",
-    "main.ml",
-    "netbuilder.ml",
-    "sim.ml",
-    "utils.ml"
-)
+# $modules = @(
+    # "gen_layout.ml",
+    # "handlers.ml",
+    # "layout.ml",
+    # "net.ml",
+    # "main.ml",
+    # "netbuilder.ml",
+    # "sim.ml",
+    # "utils.ml"
+# )
 
 # Check if source directory exists
 if (-not (Test-Path $SourceDir)) {

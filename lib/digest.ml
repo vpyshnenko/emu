@@ -120,3 +120,17 @@ let node_sent_values ~node_id (d : t) : int list =
   |> List.map Step.payload
   |> List.flatten
   
+(** Prints the state of all nodes from the final snapshot of the given digest.
+    Nodes are printed in ascending order of their IDs. *)
+let print_all_states (digest : t) : unit =
+  let final_snap = final_snapshot digest in
+  let net = final_snap.Snapshot.net in
+  Printf.printf "\n=================================================================\n";
+  Printf.printf "🌐 EMULATOR FINAL NODE STATES\n";
+  Printf.printf "=================================================================\n";
+  Net.IntMap.iter (fun id (node : Node.t) ->
+    let state_str = String.concat "; " (List.map string_of_int node.Node.state) in
+    let status_suffix = if node.Node.halted then " [HALTED]" else "" in
+    Printf.printf "  Node %-3d State : [%s]%s\n" id state_str status_suffix
+  ) net.Net.nodes;
+  Printf.printf "=================================================================\n"

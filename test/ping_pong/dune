@@ -1,0 +1,6 @@
+(test
+ (name test_ping_pong)
+ (libraries emu ping_pong ounit2)
+ (modules test_ping_pong)
+  ;(enabled_if false)
+)

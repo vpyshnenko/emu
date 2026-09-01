@@ -16,9 +16,9 @@ let stp_init ~root_id net =
 
 	
 let test_send_linear _ctx =
-  let net = Net.make_ring_net 5 in
+  (* let net = Net.make_ring_net 5 in *)
   (* let net = Net.make_linear_net 5 in *)
-  (* let net = Net.cycle_net in *)
+  let net = Net.cycle_net in
   let snap = net
     |> Netbuilder.attach_ext
     |> stp_init ~root_id:2

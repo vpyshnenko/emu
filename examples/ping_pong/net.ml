@@ -21,6 +21,32 @@ let make_linear_net n =
 
   (* 3. Compile and return the finalized network *)
   finalize builder
+  
+
+let make_ring_net n =
+  if n < 3 then 
+    failwith "Cannot create a ring network with fewer than 3 nodes";
+  let builder = create () in
+  
+  (* 1. Dynamically instantiate n nodes and capture their generated IDs *)
+  let nodes = List.init n (fun _ -> add_node builder) in
+  
+  (* 2. Recursively connect nodes in a loop: u_i <-> u_{i+1}, and u_{n-1} <-> u_0 *)
+  let rec connect_ring = function
+    | [] | [_] -> ()
+    | [u; v] -> 
+        connect builder u v;
+        let head = List.hd nodes in
+        connect builder v head (* Close the loop back to the first node *)
+    | u :: v :: rest ->
+        connect builder u v;
+        connect_ring (v :: rest) (* Slide the window *)
+  in
+  connect_ring nodes;
+  
+  (* 3. Compile and return the finalized network *)
+  finalize builder
+
 
 let make_cycle_net () =
   let builder = create () in

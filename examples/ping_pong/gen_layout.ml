@@ -1,5 +1,5 @@
 (* gen_layout.ml *)
-let mem_fields = ["leader_id"; "seq_id"; "distance";]
+let mem_fields = ["parent_id"; "seq_id"; "distance"]
 let output_fields = ["stp"; "root_tx"; "tx"; "data"]
 let input_fields = ["stp_init"; "stp"; "root_rx"; "send"; "rx";]
 

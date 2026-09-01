@@ -3,6 +3,9 @@ open OUnit2
 open Emu
 open Ping_pong
 
+let pp_list lst =
+  "[" ^ (String.concat "; " (List.map string_of_int lst)) ^ "]"
+
 let stp_init ~root_id net = 
   (* 1. Initialize linear network and attach controller nodes *)
   let init_snap = Runtime.create net in
@@ -13,7 +16,8 @@ let stp_init ~root_id net =
 
 	
 let test_send_linear _ctx =
-  let net = Net.make_linear_net 5 in
+  let net = Net.make_ring_net 5 in
+  (* let net = Net.make_linear_net 5 in *)
   (* let net = Net.cycle_net in *)
   let snap = net
     |> Netbuilder.attach_ext
@@ -34,8 +38,8 @@ let test_send_linear _ctx =
       ] in
       let received_vals = Digest.node_out_stream_on_port ~node_id:dst_id ~out_port:Layout.output.data digest in
 	  if List.mem test_val received_vals then
-          Printf.printf "  \x1b[1;32m[PASS]\x1b[0m Node %d => Node %d | Value: %4d | Steps: %2d\n"
-            src_id dst_id test_val (Digest.total_steps digest)
+          Printf.printf "  \x1b[1;32m[PASS]\x1b[0m Node %d => Node %d | Value: %4d | Steps: %2d | Received_vals: %s\n"
+            src_id dst_id test_val (Digest.total_steps digest) (pp_list received_vals)
         else 
           Printf.printf "  \x1b[1;31m[FAIL]\x1b[0m Node %d => Node %d | Value: %4d | Packet was LOST!\n"
             src_id dst_id test_val;

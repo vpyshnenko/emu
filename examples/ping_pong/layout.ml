@@ -1,19 +1,19 @@
 (* Generated automatically by gen_layout.ml. Do not edit manually! *)
 
 type mem = {
-  leader_id : int;
+  parent_id : int;
   seq_id : int;
   distance : int;
 }
 
 let mem = {
-  leader_id = 0;
+  parent_id = 0;
   seq_id = 1;
   distance = 2;
 }
 
 let to_state (mem_values : mem) : int list =
-  [ mem_values.leader_id; mem_values.seq_id; mem_values.distance ]
+  [ mem_values.parent_id; mem_values.seq_id; mem_values.distance ]
 
 type output = {
   stp : int;
@@ -70,4 +70,4 @@ let string_of_output_port = function
   | 3 -> "data"
   | idx -> "port_" ^ string_of_int idx
 
-let mem_names = [ "leader_id"; "seq_id"; "distance" ]
+let mem_names = [ "parent_id"; "seq_id"; "distance" ]

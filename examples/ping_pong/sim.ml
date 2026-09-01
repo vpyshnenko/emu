@@ -1,9 +1,8 @@
 open Emu
 
-let n = 9
-let root_id = 4
-let net = Netbuilder.attach_ext (Ping_pong.Net.make_linear_net n)
-(* let net = Netbuilder.attach_ext Ping_pong.Net.cycle_net *)
+let root_id = 2
+(* let net = Netbuilder.attach_ext (Ping_pong.Net.make_linear_net 9) *)
+let net = Netbuilder.attach_ext Ping_pong.Net.cycle_net
 
 let init_snap = Runtime.create net
 

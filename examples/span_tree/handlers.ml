@@ -79,18 +79,20 @@ let count_init = [
   Store mem.max_node_id;                    (* RAM[max_node_id] <- own_node_id *)
   
   (* Prepare counting report payload: [parent_node_id, my_node_id, distance] *)
-  Load mem.distance;
-  LoadMeta NodeId;
-  Load mem.parent_node_id;
-  SendTo (output.count, 3);                 (* Send [parent_id, own_id, distance] to parent *)
+  Load mem.distance; PopToOut;
+  LoadMeta NodeId; PopToOut;
+  Load mem.parent_node_id; PopToOut;
+  SendTo output.count;                 (* Send [parent_id, own_id, distance] to parent *)
   
   (* Propagate the count initialization trigger down to our children *)
-  Load mem.epoch_id;
-  SendTo (output.count_init, 1); 
+  Load mem.epoch_id; PopToOut;
+  SendTo output.count_init; 
 ]
 
 (* =========================================================================
    4. COUNT HANDLER: Processes incoming reports from children/sub-trees.
+   Incoming Payload: [ParentId; FromNodeId; distance;]
+   Outgoing Payload: 
    ========================================================================= *)
 let count = [
   (* Security check: Is this count report actually addressed to us? *)
@@ -144,10 +146,10 @@ let count = [
     (* --- CASE B: WE ARE A TRANSIT/MIDDLE NODE --- *)
     [ 
       (* Forward the reported node's ID up to our parent *)
-      LoadPayload 2;                        (* Payload[2] holds the reporting node's distance *)
-      LoadPayload 1;                        (* Payload[1] holds the reporting node's ID *)
+	  CopyPayloadToOut 1;                   (* out_buf <- [FromNodeId; distance] *)
       Load mem.parent_node_id;              (* Load our parent's ID to address the packet *)
-      SendTo (output.count, 3);             (* Forward [parent_id, reported_id, distance] *)
+	  PopToOut;
+      SendTo output.count;             (* Forward [parent_id, reported_id, distance] *)
     ]
   |];
 ]

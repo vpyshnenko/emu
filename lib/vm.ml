@@ -41,6 +41,7 @@ let eval_normal
     ~(meta_mem : int array)
 	~(payload_buf : int array)        
     ~(regA : int ref)
+	~(out_buf : int list ref)
     ~(emit : int -> Payload.t -> unit)
   : Stack.t =
   match instr with
@@ -197,10 +198,22 @@ let eval_normal
       emit idx [!regA];
       st
 	  
-  | SendTo (out_port, count) ->
-    let packet, st' = Stack.pop_n st count in
-    emit out_port packet;
-    st'
+  | SendTo out_port -> 
+      emit out_port !out_buf;
+      out_buf := [];
+      st
+  | CopyPayloadToOut idx ->
+      let len = Array.length payload_buf in
+      if idx < 0 || idx > len then
+        failwith (Printf.sprintf "VM: CopyPayloadToOut index %d out of bounds (size=%d)" idx len)
+      else
+        let slice = Array.sub payload_buf idx (len - idx) |> Array.to_list in
+        out_buf := slice;
+        st
+  | PopToOut ->
+      let v, st' = pop st in
+      out_buf := v :: !out_buf;
+      st'
 	
   | LoadPayload idx ->
       if idx < 0 || idx >= Array.length payload_buf then
@@ -229,6 +242,7 @@ let exec_instr
     ~(meta_mem : int array)
 	~(payload_buf : int array)        
     ~(regA : int ref)
+	~(out_buf : int list ref)
     ~(emit : int -> Payload.t -> unit)
   : exec_result =
   match instr with
@@ -264,7 +278,7 @@ let exec_instr
   (* --- Normal instructions --- *)
   | _ ->
       let st' =
-        eval_normal instr st ~mem ~meta_mem ~payload_buf ~regA ~emit
+        eval_normal instr st ~mem ~meta_mem ~payload_buf ~regA ~out_buf ~emit
       in
       { st = st'; control = Continue; remaining_code = rest_code }
 
@@ -301,6 +315,8 @@ let exec_program
     | head :: _ -> head 
     | [] -> failwith "VM: Cannot execute program with an empty payload packet"
   ) in
+  
+  let out_buf = ref [] in
 
   (* Operational stack starts empty *)
   let st = Stack.create ~stack_capacity:vm.stack_capacity in
@@ -323,7 +339,7 @@ let exec_program
           (st, false)
       | instr :: rest ->
           let result =
-            try exec_instr st instr rest ~mem ~meta_mem ~payload_buf ~regA ~emit with
+            try exec_instr st instr rest ~mem ~meta_mem ~payload_buf ~regA ~out_buf ~emit with
             | Failure msg -> raise (Emu_Vm_Exec_Error (steps, instr, msg))
             | exn -> raise (Emu_Vm_Exec_Error (steps, instr, Printexc.to_string exn))
           in

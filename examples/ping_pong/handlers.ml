@@ -15,9 +15,9 @@ let stp_init = [
   (* 2. Set root distance to itself as 0 *)
   PushConst 0;            (* Stack: [ 0 ] *)
   Store mem.distance;     (* RAM[distance] <- 0 *)
-
+  PopToOut;
   (* 3. Broadcast our Root advertisement to all physical neighbors *)
-  SendTo (output.stp, 1); (* broadcasts [Distance] *)
+  SendTo output.stp;      (* broadcasts [Distance] *)
   
 ]
 
@@ -46,9 +46,10 @@ let stp = [
 	  
       PushA;    (* restore proposed distance from RegA *)
       Store mem.distance; (* RAM[distance] <- proposed_dist *)
+	  PopToOut;
 
       (* Broadcast updated shortest-path advertisement to neighbors *)
-      SendTo (output.stp, 1); (* Pops elements, broadcasts [distance] *)
+      SendTo output.stp; (* Pops elements, broadcasts [distance] *)
     ]
   |];
 ]
@@ -58,8 +59,8 @@ let stp = [
    SEND HANDLER
    Triggered externally (e.g. by ext_node) to transfer a value.
    Incoming Payload: [DestNodeId; Val]
-   Outgoing Downward Payload: [SeqId; DestNodeId; FromNodeId; Val]
-   Outgoing Upward Payload: [ParentId; ToNodeId; FromeNodeId; Val]
+   Outgoing Downward Payload: [SeqId;  FromNodeId; DestNodeId; Val]
+   Outgoing Upward Payload: [ParentId; FromNodeId; DestNodeId;  Val]
    ========================================================================= *)
 let send = [
   (* --- OPTIMIZATION A: SHORT-CIRCUIT SELF-SENDING --- *)
@@ -71,52 +72,50 @@ let send = [
   BranchOf [|
     (* Branch 0 (True: Self-sending -> Deliver locally) *)
     [
-      LoadPayload 1;      (* Stack: [ Val ] *)
-	  SendTo(output.data, 1);
+	  CopyPayloadToOut 0;
+	  SendTo output.data;
       Halt;               (* Stop VM immediately *)
     ]
   |];
-
+  
+  CopyPayloadToOut 1;           (* out_buf <- [Val] *)
+  LoadMeta NodeId; PopToOut;    (* out_buf <- [FromNodeId; Val] *)  
+  LoadPayload 0; PopToOut;      (* out_buf <- [DestNodeId; FromNodeId; Val] *) 
+  
   (* --- OPTIMIZATION B: ROOT DIRECT-FLOOD --- *)
   Load mem.parent_id;      
-  EqPop (-1);             
+  EqPop (-1);
   
   BranchOf [|
     (* Branch 0 (True: Sender is the Root -> Bypasses convergecast, initiate flood) *)
     [
-      LoadPayload 1;      (* Stack: [ Val ] *)
-      LoadMeta NodeId;    (* Stack: [ FromNodeId (OurNodeId); Val ] *)
-      LoadPayload 0;      (* Stack: [ DestNodeId; FromNodeId; Val ] *)
-      
       (* Increment and store our local Sequence ID *)
-      Load mem.seq_id;    (* Stack: [ current_seq_id; DestNodeId; FromNodeId; Val ] *)
+      Load mem.seq_id;    (* Stack: [ current_seq_id; ] *)
       PushConst 1;        (* Stack: [ 1; current_seq_id; ... ] *)
       Add;                (* Stack: [ new_seq_id; ... ] *)
       Store mem.seq_id;   (* RAM[seq_id] <- new_seq_id (keeps new_seq_id on stack top) *)
+	  PopToOut;           (* out_buf <- [SeqId; DestNodeId; FromNodeId; Val *)
       
       (* Broadcast flood packet: [SeqId; DestNodeId; FromNodeId; Val] *)
-      SendTo (output.tx, 4);
+      SendTo output.tx;
       Halt;
     ]
   |];
 
   (* --- PHASE 2: CONVERGECAST UPWARDS TO ROOT --- *)
-  (* Construct Convergecast Packet: [LeaderId; TTL; DestNodeId; FromNodeId; Val] *)
-  LoadPayload 1;          (* Stack: [ Val ] *)
-  LoadMeta NodeId;        (* Stack: [ FromNodeId; Val ] *)
-  LoadPayload 0;          (* Stack: [ DestNodeId; FromNodeId; Val ] *)
-  Load mem.parent_id;     (* Stack: [ ParentId; DestNodeId; FromNodeId; Val ] *)
+  Load mem.parent_id;     
+  PopToOut;                (* out_buf <- [ParentId; DestNodeId; FromNodeId; Val] *)
   
-  (* Ship the packet up the tree [ParentId; ToNodeId; FromeNodeId; Val] *)
-  SendTo (output.root_tx, 4);
+  (* Ship the packet up the tree *)
+  SendTo output.root_tx;
  ]
 
 
 (* =========================================================================
    ROOT_RX HANDLER
    Processes packets climbing the Spanning Tree.
-   Incoming Payload: [ParentId; ToNodeId; FromNodeId; Val]
-   Outgoing Upward Payload: [ParentId; ToNodeId; FromeNodeId; Val]
+   Incoming Payload: [ParentId; DestNodeId; FromNodeId; Val]
+   Outgoing Upward Payload: [NextParentId; DestNodeId; FromNodeId; Val]
    ========================================================================= *)
 let root_rx = [
   (* 1. Verify if we are the Root node target *)
@@ -129,23 +128,22 @@ let root_rx = [
 	  LoadPayload 0;
 	  LoadMeta NodeId;
 	  Sub;
-	  NonEqPop 0;
+	  NonEqPop 0;    (* current node is not on the stp root path *)
       BranchOf [| 
         [ Halt ]          (* Discard packet to prevent routing loops *)
       |];
       
       (* Repack and forward the convergecast packet *)
-      LoadPayload 3;      (* Stack: [ Val ] *)
-      LoadPayload 2;      (* Stack: [ FromNodeId; Val ] *)
-      LoadPayload 1;      (* Stack: [ DestNodeId; FromNodeId; Val ] *)
-      Load mem.parent_id;      (* Stack: [ ParentId; DestNodeId; FromNodeId; Val ] *)
+	  CopyPayloadToOut 1; (* out_buf <- [DestNodeId; FromNodeId; Val] *)
+      Load mem.parent_id;       
+	  PopToOut;           (* out_buf <- [NextParentId; DestNodeId; FromNodeId; Val]  ] *)
       
-      SendTo (output.root_tx, 4); (* Forward upstream *)
+      SendTo output.root_tx; (* Forward upstream *)
       Halt;
     ];
     
     (* --- BRANCH 1: WE ARE THE ROOT (Trigger downward Sequenced Flood) --- *)
-	(* Incoming Payload [ParentId; ToNodeId; FromNodeId; Val] *)
+	(* Incoming Payload [ParentId; DestNodeId; FromNodeId; Val] *)
     [
       (* Guard: Is the target destination of this packet the Root itself? *)
       LoadPayload 1;      (* Stack: [ DestNodeId ] *)
@@ -156,26 +154,25 @@ let root_rx = [
       BranchOf [|
         (* Nested Branch 0: (True: Packet destined for Root) -> Deliver locally *)
         [
-          LoadPayload 3;  (* Stack: [ Val ] *)
-		  SendTo (output.data, 1);
+          CopyPayloadToOut 2;
+		  SendTo output.data;
           Halt;
         ];
         
         (* Initiate downward propagation *)
         [
           (* Pack parameters *)
-          LoadPayload 3;  (* Stack: [ Val ] *)
-          LoadPayload 2;  (* Stack: [ FromNodeId; Val ] *)
-          LoadPayload 1;  (* Stack: [ DestNodeId; FromNodeId; Val ] *)
+		  CopyPayloadToOut 1; (* out_buf <- [DestNodeId; FromNodeId; Val] *)
           
           (* Increment local sequence number and store *)
-          Load mem.seq_id;(* Stack: [ current_seq_id; DestNodeId; FromNodeId; Val ] *)
+          Load mem.seq_id;(* Stack: [ current_seq_id; ] *)
           PushConst 1;    (* Stack: [ 1; current_seq_id; ... ] *)
           Add;            (* Stack: [ new_seq_id; ... ] *)
           Store mem.seq_id;(* RAM[seq_id] <- new_seq_id (keeps new_seq_id on stack top) *)
+		  PopToOut;
           
           (* Broadcast flood packet: [SeqId; DestNodeId; FromNodeId; Val] *)
-          SendTo (output.tx, 4);
+          SendTo output.tx;
         ]		
       |]
     ]
@@ -190,7 +187,7 @@ let root_rx = [
    ========================================================================= *)
 let rx = [
   (* --- A. SEQUENCE NUMBER DEDUPLICATION --- *)
-  PushA;                  (* Push Incoming SeqId (passed in RegA) onto stack *)
+  LoadPayload 0;          (* Push Incoming SeqId onto stack *)
   Load mem.seq_id;        (* Stack: [ cached_seq_id; incoming_seq_id ] *)
   Sub;                    (* Stack: [ cached_seq_id - incoming_seq_id ] *)
   GtPop 0;                (* Pops. If (cached - incoming) > 0 (Old/Duplicate), pushes 1, else 0 (New) *)
@@ -198,7 +195,7 @@ let rx = [
   BranchOf [|
     (* Branch 0: (True: New message) -> Update local sequence cache and proceed *)
     [
-      PushA;              (* Push incoming SeqId *)
+      LoadPayload 0;              (* Push incoming SeqId *)
       Store mem.seq_id;   (* RAM[seq_id] <- incoming SeqId *)
       Pop;                (* Clean up residual stack value *)
     ];
@@ -215,19 +212,56 @@ let rx = [
   BranchOf [|
     (* Branch 0: TRANSIT NODE (Not equal -> Keep forwarding the flood) *)
     [
-      LoadPayload 3;      (* Stack: [ Val ] *)
-      LoadPayload 2;      (* Stack: [ FromNodeId; Val ] *)
-      LoadPayload 1;      (* Stack: [ DestNodeId; FromNodeId; Val ] *)
-      LoadPayload 0;      (* Stack: [ SeqId; DestNodeId; FromNodeId; Val ] *)
-      SendTo (output.tx, 4); (* Retransmit downward *)
+	  CopyPayloadToOut 0; (* copy to out_buf entire inoming packet *)
+      SendTo output.tx; (* Retransmit downward *)
     ];
     
     (* Branch 1: TARGET REACHED (Equal -> Deliver packet payload to the node) *)
     [
-      LoadPayload 3;      (* Stack: [ Val ] *)
-	  SendTo (output.data, 1)
+	  CopyPayloadToOut 2; (* out_buf <- [FromNodeId; Val] *)
+	  SendTo output.data;
     ]
   |]
 ]
 
-let handlers = make_handlers ~stp_init ~stp ~send ~root_rx ~rx
+(* =========================================================================
+   PING HANDLER
+   Request echo from remote node.
+   Incoming Payload: [TargetNodeId;]
+   Outgoing Payload: [TargetNodeId; PingServiceId; FromNodeId;]
+   ========================================================================= *)
+let ping = [
+  LoadMeta NodeId; PopToOut;
+  PushConst 11; PopToOut;  (* PingServiceId = 11 *)
+  LoadPayload 0; PopToOut;
+  SendTo output.ping;
+]
+
+(* =========================================================================
+   PONG HANDLER
+   Respond to PING request from remote node.
+   Incoming Payload: [FromNodeId; ServiceId; InitiatorNodeId;]
+   Outgoing Payload: [InitiatorNodeId; PongServiceId; OurNodeId]
+   ========================================================================= *)
+let pong = [
+  LoadPayload 1;    (* Stack: [ ServiceId ] *)
+  Eq 11;
+  BranchOf [|
+    [
+	  LoadMeta NodeId; PopToOut; (* out_buf <- [OurNodeId *)
+	  PushConst 12; PopToOut;  (* out_buf <- [PongServiceId(12);OurNodeId *)
+	  LoadPayload 0; PopToOut; (* out_buf <- [InitiatorNodeId; PongServiceId(12);OurNodeId *)
+	  SendTo output.pong;
+	]
+  |];
+  Eq 12;
+  BranchOf [|
+    [
+	  LoadPayload 2; PopToOut; (* out_buf <- [TargetNodeId *)
+	  SendTo output.ping_ok
+	]
+  |]
+]
+
+
+let handlers = make_handlers ~stp_init ~stp ~send ~root_rx ~rx ~ping ~pong

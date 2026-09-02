@@ -15,6 +15,10 @@ let send a b value =
   Sim.send a b value
 ;;
 
+let ping a b =
+  Sim.ping a b
+;;
+
 
 print_endline "\n=== EMU Explorer REPL READY ===";
 print_endline "Type: send 2 5 42"

@@ -3,9 +3,8 @@ open Layout
 
 
 let send = [
-  LoadPayload 1;                 (* 1. Push Val *)
-  PushA;                         (* 2. Push DestNodeId *)
-  SendTo (output.tx, 2);       (* 3. Emit [DestNodeId; Val] *)
+  CopyPayloadToOut 0;  (* forward incoming payload [DestNodeId; Val] *)
+  SendTo output.tx;       (* 3. Emit [DestNodeId; Val] *)
 ]
 
 (* =========================================================================
@@ -23,9 +22,8 @@ let rx = [
   BranchOf [|
     (* Branch 0: TRANSIT NODE -> Forward packet to neighbors [8] *)
     [
-      LoadPayload 1;                        (* Push Val *)
-      LoadPayload 0;                        (* Push DestNodeId *)
-      SendTo (output.tx, 2);                (* Keep transmitting over 'tx' [4] *)
+      CopyPayloadToOut 0;  (* forward incoming payload [DestNodeId; Val] *)
+      SendTo output.tx;                (* Keep transmitting over 'tx' [4] *)
     ];
     (* Branch 1: TARGET REACHED! Success! [8] *)
     [

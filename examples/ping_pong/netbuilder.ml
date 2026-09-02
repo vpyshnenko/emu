@@ -30,6 +30,12 @@ let add_node t =
   t.nodes <- IntMap.add id () t.nodes;
   id                          (* Return the autoincremented ID *)
 
+let add_ping_pong t idA =
+  let  conn_ping = { Emu.Net.from = (idA, output.ping); to_ = (idA, input.send) } in
+  let  conn_pong = { Emu.Net.from = (idA, output.pong); to_ = (idA, input.send) } in
+  let  conn_data = { Emu.Net.from = (idA, output.data); to_ = (idA, input.pong) } in
+  t.connections <- conn_ping::conn_pong::conn_data::t.connections
+  
 (* Connects two nodes symmetrically using a shared STP handler *)
 let add_connection t idA idB out_port in_port  =
   let conn_ab = { Emu.Net.from = (idA, out_port); to_ = (idB, in_port) } in
@@ -63,6 +69,7 @@ let finalize t =
       ~out_ports: Layout.out_ports
       () 
     in
+	add_ping_pong t id;
     Emu.Net.add_node node acc_net
   ) t.nodes (Emu.Net.create ()) in
 
@@ -77,6 +84,8 @@ let ext_input_data = 0
 
 let ext_stp_id = (-2)
 
+let ext_ping_id = (-3)
+let ext_input_ping_ok = 0
 
 let attach_ext (net : Emu.Net.t) =
   (* 1. Gather all active node IDs from the network *)
@@ -101,7 +110,20 @@ let attach_ext (net : Emu.Net.t) =
     ~out_ports:node_ids 
     ()
   in
+  
+  let ext_ping_node = Node.create 
+    ~id:ext_ping_id 
+    ~state:[] 
+    ~vm:Vm.empty
+  (* Only ONE empty handler registered on port 0 for ALL incoming feedback *)
+    ~handlers:(Node.IntMap.singleton ext_input_ping_ok [])
+    (* ~handlers:Node.IntMap.empty *)
+    ~out_ports:node_ids 
+    ()
+  in  
+  
   net
+  (* add ext_node *)
   |> Emu.Net.add_node ext_node
   (* 4. Symmetrically wire the control plane and the shared feedback plane *)
   |> IntMap.fold (fun node_id _node acc_net ->
@@ -118,6 +140,8 @@ let attach_ext (net : Emu.Net.t) =
          to_ = (ext_id, ext_input_data) 
        }
   ) net.nodes
+  
+  (* add ext_node_stp *)
   |> Emu.Net.add_node ext_node_stp
   |> IntMap.fold (fun node_id _node acc_net ->
     acc_net
@@ -125,6 +149,21 @@ let attach_ext (net : Emu.Net.t) =
     |> Emu.Net.connect { 
          from = (ext_stp_id, node_id); 
          to_ = (node_id, input.stp_init) 
+       }
+  ) net.nodes
+  
+  (* add ext_ping_node *)
+  |> Emu.Net.add_node ext_ping_node
+  (* 4. Symmetrically wire the control plane and the shared feedback plane *)
+  |> IntMap.fold (fun node_id _node acc_net ->
+    acc_net
+    |> Emu.Net.connect { 
+         from = (ext_ping_id, node_id); 
+         to_ = (node_id, input.ping) 
+       }
+    |> Emu.Net.connect { 
+         from = (node_id, output.ping_ok); 
+         to_ = (ext_ping_id, ext_input_ping_ok) 
        }
   ) net.nodes
   

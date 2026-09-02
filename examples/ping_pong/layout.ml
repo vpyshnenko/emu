@@ -20,6 +20,9 @@ type output = {
   root_tx : int;
   tx : int;
   data : int;
+  ping : int;
+  ping_ok : int;
+  pong : int;
 }
 
 let output = {
@@ -27,9 +30,12 @@ let output = {
   root_tx = 1;
   tx = 2;
   data = 3;
+  ping = 4;
+  ping_ok = 5;
+  pong = 6;
 }
 
-let out_ports = [ output.stp; output.root_tx; output.tx; output.data ]
+let out_ports = [ output.stp; output.root_tx; output.tx; output.data; output.ping; output.ping_ok; output.pong ]
 
 type input = {
   stp_init : int;
@@ -37,6 +43,8 @@ type input = {
   root_rx : int;
   send : int;
   rx : int;
+  ping : int;
+  pong : int;
 }
 
 let input = {
@@ -45,15 +53,19 @@ let input = {
   root_rx = 2;
   send = 3;
   rx = 4;
+  ping = 5;
+  pong = 6;
 }
 
-let make_handlers ~stp_init ~stp ~root_rx ~send ~rx =
+let make_handlers ~stp_init ~stp ~root_rx ~send ~rx ~ping ~pong =
   Emu.Node.IntMap.empty
   |> Emu.Node.IntMap.add input.stp_init stp_init
   |> Emu.Node.IntMap.add input.stp stp
   |> Emu.Node.IntMap.add input.root_rx root_rx
   |> Emu.Node.IntMap.add input.send send
   |> Emu.Node.IntMap.add input.rx rx
+  |> Emu.Node.IntMap.add input.ping ping
+  |> Emu.Node.IntMap.add input.pong pong
 
 let string_of_input_port = function
   | 0 -> "stp_init"
@@ -61,6 +73,8 @@ let string_of_input_port = function
   | 2 -> "root_rx"
   | 3 -> "send"
   | 4 -> "rx"
+  | 5 -> "ping"
+  | 6 -> "pong"
   | idx -> "port_" ^ string_of_int idx
 
 let string_of_output_port = function
@@ -68,6 +82,9 @@ let string_of_output_port = function
   | 1 -> "root_tx"
   | 2 -> "tx"
   | 3 -> "data"
+  | 4 -> "ping"
+  | 5 -> "ping_ok"
+  | 6 -> "pong"
   | idx -> "port_" ^ string_of_int idx
 
 let mem_names = [ "parent_id"; "seq_id"; "distance" ]

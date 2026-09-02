@@ -42,7 +42,9 @@ type instr =
   | Emit                  (* send regA content to port defined by top of stack *)
   | EmitTo of int         (* send regA content to port by index *)
   | LoadPayload of int    (* load payload element by index *)
-  | SendTo of int * int   (* send to (out_port, n stack entries) *)
+  | SendTo of int
+  | CopyPayloadToOut of int
+  | PopToOut
 
   | Fail (* fail on purpose *)
   
@@ -85,7 +87,9 @@ let string_of_instr = function
   | Emit -> "Emit"
   | EmitTo i -> Printf.sprintf "EmitTo %d" i
   | LoadPayload idx -> Printf.sprintf "LoadPayload %d" idx
-  | SendTo (p, c) -> Printf.sprintf "SendTo (%d, %d)" p c
+  | SendTo p -> Printf.sprintf "SendTo %d" p
+  | CopyPayloadToOut idx -> Printf.sprintf "CopyPayloadToOut %d" idx
+  | PopToOut -> "PopToOut"
   | Fail -> "Fail"
   | Halt -> "Halt"
   | Shutdown -> "Shutdown"

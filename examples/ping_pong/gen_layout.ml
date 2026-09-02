@@ -1,7 +1,7 @@
 (* gen_layout.ml *)
 let mem_fields = ["parent_id"; "seq_id"; "distance"]
-let output_fields = ["stp"; "root_tx"; "tx"; "data"]
-let input_fields = ["stp_init"; "stp"; "root_rx"; "send"; "rx";]
+let output_fields = ["stp"; "root_tx"; "tx"; "data"; "ping"; "ping_ok"; "pong"]
+let input_fields = ["stp_init"; "stp"; "root_rx"; "send"; "rx"; "ping"; "pong"]
 
 let generate_type_and_val name fields oc =
   Printf.fprintf oc "type %s = {\n" name;

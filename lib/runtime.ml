@@ -70,7 +70,7 @@ let deliver_event
        (* Per-event debug steps list (kept simple; not reversed into chronological) *)
        (snap', step :: steps_acc)
 	 with exn ->
-      handle_delivery_error dst_id in_port ev.src ev.out_port ev.payload exn
+      handle_delivery_error (Snoc.length history) dst_id in_port ev.src ev.out_port ev.payload exn
 
     ) (snap, []) subscribers
 
@@ -155,7 +155,7 @@ let rec run_avalanches
         | _ ->
             run_avalanches ?stop_when ~initial_snapshot ~history snap rest
 	  with AvalancheLimitExceeded partial_snap ->
-	    Printf.eprintf "\n\x1b[1;31m[EMU RUNTIME ERROR] AVALANCHE: Maximum steps exceeded - possible infinite loop!\x1b[0m\n";
+	    Printf.eprintf "\n\x1b[1;31m[EMU RUNTIME ERROR]: Maximum steps of avalanch exceeded - possible infinite loop!\x1b[0m\n";
         Printf.eprintf "Simulation was halted. Returning the partial execution history (%d steps) for debugging.\n\n" (List.length (Snoc.to_list history));
         flush stderr;
         (* Gracefully return the partial digest gathered so far! *)

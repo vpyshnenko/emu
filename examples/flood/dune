@@ -1,0 +1,18 @@
+; examples/flood/dune
+
+(library
+ (name flood)
+ (libraries emu)
+ (modules layout handlers netbuilder net utils))
+
+(executable
+ (name main)
+ (public_name emu-flood)
+ (libraries emu flood)
+ (modules main))
+
+(rule
+ (targets layout.ml)
+ (deps gen_layout.ml)
+ (action (run ocaml gen_layout.ml))
+ (mode promote))

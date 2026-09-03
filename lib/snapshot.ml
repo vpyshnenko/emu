@@ -28,4 +28,7 @@ let with_net net snap  =
 
 let with_queue queue snap =
   { snap with queue }
+  
+let with_max_queue_length max_queue_length snap =
+  { snap with max_queue_length }
 

@@ -1,0 +1,20 @@
+#mod_use "layout.ml";;
+#mod_use "handlers.ml";;
+#mod_use "netbuilder.ml";;
+#mod_use "sim.ml";;
+#use "../../tools/explorer/explorer.ml";;
+module Explorer = Make(Emu.Step)(Layout);;
+
+
+let explore digest ?node () =
+  Explorer.explore ?node digest
+;;
+
+
+let send a b = 
+  Sim.send a b
+;;
+
+
+print_endline "\n=== EMU Explorer REPL READY ===";
+print_endline "Type: send 2 5"

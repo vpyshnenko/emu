@@ -2,19 +2,8 @@
 (* Encapsulated execution context for the emulator.
    Prevents direct structure dependency from other modules while keeping updates extremely fast. *)
 
-(* Emu_Vm_Exec_Error (VmStep, Instr, msg) *)
-exception Emu_Vm_Exec_Error of int * Instructions.instr * string
-
-
-type field =
-  | NodeId of int
-  | InPort of int
-  | SenderId of int
-  | Payload of int list
-  | VmStep of int
-  | Instr of Instructions.instr
-
 type t = {
+  mutable ava_step   : int option;
   mutable node_id   : int option;
   mutable in_port   : int option;
   mutable sender_id : int option;
@@ -25,6 +14,7 @@ type t = {
 }
 
 let create () = {
+  ava_step  = None;
   node_id   = None;
   in_port   = None;
   sender_id = None;
@@ -35,7 +25,8 @@ let create () = {
 }
 
 (* Inline-friendly, fast property updater *)
-let build 
+let build
+    ?ava_step 
     ?node_id 
     ?in_port 
     ?sender_id 
@@ -50,6 +41,7 @@ let build
     | None -> create ()
   in
   (* Если поле передано, обновляем значение (оно уже завернуто в Some) *)
+  (match ava_step with Some _ -> c.ava_step <- ava_step | None -> ());
   (match node_id with Some _ -> c.node_id <- node_id | None -> ());
   (match in_port with Some _ -> c.in_port <- in_port | None -> ());
   (match sender_id with Some _ -> c.sender_id <- sender_id | None -> ());
@@ -68,6 +60,7 @@ let print ctx msg =
     "\n=================================================================\n" ^
     "⚡ " ^ msg ^"\n" ^
     "=================================================================\n" ^
+    opt_str "Avalanch step" string_of_int ctx.ava_step ^
     opt_str "Node ID" string_of_int ctx.node_id ^
     opt_str "Input Port" string_of_int ctx.in_port ^
     opt_str "Sender ID" string_of_int ctx.sender_id ^

@@ -27,16 +27,16 @@ $modules = @(
     "step.ml"
 )
 
-$modules = @(
-    "gen_layout.ml",
-    "handlers.ml",
-    "layout.ml",
-    "net.ml",
-    "main.ml",
-    "netbuilder.ml",
-    "sim.ml",
-    "utils.ml"
-)
+# $modules = @(
+    # "gen_layout.ml",
+    # "handlers.ml",
+    # "layout.ml",
+    # "net.ml",
+    # "main.ml",
+    # "netbuilder.ml",
+    # "sim.ml",
+    # "utils.ml"
+# )
 
 # Check if source directory exists
 if (-not (Test-Path $SourceDir)) {

@@ -59,14 +59,14 @@ let build
   (match instr with Some _ -> c.instr <- instr | None -> ());
   c
 
-let print ctx =
+let print ctx msg =
   let opt_str name f = function
     | Some v -> Printf.sprintf "  %-12s : %s\n" name (f v)
     | None   -> ""
   in
   let dump =
     "\n=================================================================\n" ^
-    "⚡ Emu FAILED with following EXECUTION CONTEXT\n" ^
+    "⚡ " ^ msg ^"\n" ^
     "=================================================================\n" ^
     opt_str "Node ID" string_of_int ctx.node_id ^
     opt_str "Input Port" string_of_int ctx.in_port ^

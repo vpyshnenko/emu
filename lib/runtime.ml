@@ -25,11 +25,18 @@ let create net =
 (* Enqueue                                                       *)
 (* ------------------------------------------------------------- *)
 
-let enqueue (ev : event) (snap : Snapshot.t) : Snapshot.t =
-  let queue = Queue.enqueue (ev.src, ev.out_port, ev.payload) snap.queue in
-  snap
-  |> Snapshot.with_queue queue
-
+let enqueue (ev : event) (snap : Snapshot.t) : Snapshot.t = 
+  let current_size = Queue.length snap.queue in
+  if current_size >= snap.max_queue_length then
+    failwith (Printf.sprintf "Emu Runtime: max_queue_length exeeded! (Limit: %d)" snap.max_queue_length)
+  else
+    let queue = Queue.enqueue (ev.src, ev.out_port, ev.payload) snap.queue in 
+    snap |> Snapshot.with_queue queue
+  
+let enqueueOuts src_id outs snap = 
+  List.fold_left (fun sn (out_p, out_payload) -> 
+      enqueue { src = src_id; out_port = out_p; payload = out_payload } sn
+    ) snap outs 
 (* ------------------------------------------------------------- *)
 (* Deliver an event                                              *)
 (* - appends steps directly into global history Snoc             *)
@@ -39,10 +46,10 @@ let enqueue (ev : event) (snap : Snapshot.t) : Snapshot.t =
 
 let deliver_to_subscriber snap ev dst_id in_port =
   let net_after, outs = Net.deliver snap.net ev.src dst_id in_port ev.payload in
-  let queue' = List.fold_left (fun q (out_p, out_payload) -> 
-    Queue.enqueue (dst_id, out_p, out_payload) q
-  ) snap.queue outs in
-  let snap' = Snapshot.with_net snap net_after |> Snapshot.with_queue queue' in
+  let snap' = snap
+    |> Snapshot.with_net net_after
+    |> enqueueOuts dst_id outs
+  in
   let step = Step.make ~src_node:ev.src ~dest_node:dst_id ~in_port ~payload:ev.payload ~emitted:outs ~snapshot:snap' in
   (snap', step)
   

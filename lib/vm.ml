@@ -228,7 +228,7 @@ let eval_normal
         st
   | PopToOut ->
       let v, st' = pop st in
-      if List.length !out_buf = vm.buf_size then
+      if List.length !out_buf >= vm.buf_size then
         failwith "VM: out_buf overflow"
       else
         out_buf := v :: !out_buf;

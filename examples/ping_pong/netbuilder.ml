@@ -18,7 +18,7 @@ let create () = {
 }
 
 let state = Layout.to_state {parent_id = (-1); distance = max_int; seq_id = 0; ping_session_id = 0;}
-let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
+let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state) ~buf_size:6 ()
 
 let handlers = Handlers.handlers
 (* let handlers = Handlers_flood.handlers *)
@@ -94,7 +94,7 @@ let attach_ext (net : Emu.Net.t) =
   let ext_node = Node.create 
     ~id:ext_id 
     ~state:[] 
-    ~vm:Vm.empty
+    ~vm
   (* Only ONE empty handler registered on port 0 for ALL incoming feedback *)
     ~handlers:(Node.IntMap.singleton ext_input_data [])
     (* ~handlers:Node.IntMap.empty *)
@@ -114,7 +114,7 @@ let attach_ext (net : Emu.Net.t) =
   let ext_ping_node = Node.create 
     ~id:ext_ping_id 
     ~state:[] 
-    ~vm:Vm.empty
+    ~vm
   (* Only ONE empty handler registered on port 0 for ALL incoming feedback *)
     ~handlers:(Node.IntMap.singleton ext_input_ping_ok [])
     (* ~handlers:Node.IntMap.empty *)

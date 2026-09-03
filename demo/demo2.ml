@@ -2,7 +2,7 @@ open Instructions
 open Runtime
 
 module Demo = struct
-  let vm = Vm.create ~stack_capacity:100 ~max_steps:100
+  let vm = Vm.create ~stack_capacity:100 ~max_steps:100 ()
   let ceil = 5
 
   let addmod_prog = [

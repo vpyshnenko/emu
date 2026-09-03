@@ -87,7 +87,7 @@ let handlers = IntMap.empty
   |> IntMap.add input.data data_handler
   |> IntMap.add input.reset reset_handler
 
-let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2
+let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 ()
 
 let make ~id : t =
   let node = Node.create 

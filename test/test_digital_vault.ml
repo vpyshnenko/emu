@@ -12,7 +12,7 @@ let pp_list lst =
 
 let test_digital_vault _ctx =
   (* Shared VM defaults *)
-  let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 in
+  let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 () in
 
 
  

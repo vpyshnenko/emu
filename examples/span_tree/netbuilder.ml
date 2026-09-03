@@ -18,7 +18,7 @@ let create () = {
 }
 
 let state = [0; -1; max_int; 0; -1; -1]
-let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
+let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state) ~buf_size:3 ()
 
 let handlers = Handlers.handlers
 

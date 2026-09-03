@@ -25,7 +25,7 @@ type leaf = {
   output : leaf_output;
 }
 
-let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2
+let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 ()
 let initial_state = [0;0]
 
 let input = { setup = 0; auth = 1; reset = 2 }

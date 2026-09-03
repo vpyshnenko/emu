@@ -83,7 +83,7 @@ let make_auth_handler ~count =
 let setup_handler = make_setup_handler ~count:(-1)
 let auth_handler = make_auth_handler ~count:(-1)
 
-let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2
+let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:2 ()
 let initial_state = [-1;-1]
 
 

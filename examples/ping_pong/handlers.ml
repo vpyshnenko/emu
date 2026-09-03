@@ -58,7 +58,7 @@ let stp = [
 (* =========================================================================
    SEND HANDLER
    Triggered externally (e.g. by ext_node) to transfer a value.
-   Incoming Payload: [DestNodeId; Val]
+   Incoming Payload: [DestNodeId; Val1;...]
    Outgoing Downward Payload: [SeqId;  FromNodeId; DestNodeId; Val]
    Outgoing Upward Payload: [ParentId; FromNodeId; DestNodeId;  Val]
    ========================================================================= *)
@@ -77,7 +77,6 @@ let send = [
       Halt;               (* Stop VM immediately *)
     ]
   |];
-  
   CopyPayloadToOut 1;           (* out_buf <- [Val] *)
   LoadMeta NodeId; PopToOut;    (* out_buf <- [FromNodeId; Val] *)  
   LoadPayload 0; PopToOut;      (* out_buf <- [DestNodeId; FromNodeId; Val] *) 

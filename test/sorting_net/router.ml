@@ -140,7 +140,7 @@ let handlers = IntMap.empty
   |> IntMap.add input.flush_gt_complete flush_gt_complete_handler
   |> IntMap.add input.reset reset_handler
 
-let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:3
+let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:3 ()
 
 let make ~id : t =
   let node = Node.create 

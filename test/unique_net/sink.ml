@@ -57,7 +57,7 @@ let handlers = IntMap.empty
   |> IntMap.add input.data data_handler
   |> IntMap.add input.overflow overflow_handler
 
-let vm = Vm.create ~stack_capacity:30 ~max_steps:1000 ~mem_size:1
+let vm = Vm.create ~stack_capacity:30 ~max_steps:1000 ~mem_size:1 ()
 let initial_state = []  (* Sink is stateless *)
 
 let make ~l ~id : t =

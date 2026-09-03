@@ -63,7 +63,7 @@ let deliver_event
        (* Per-event debug steps list (kept simple; not reversed into chronological) *)
        (snap', step :: steps_acc)
 	 with exn ->
-      handle_delivery_error dst_id in_port ev.src ev.payload exn
+      handle_delivery_error dst_id in_port ev.src ev.out_port ev.payload exn
 
     ) (snap, []) subscribers
 

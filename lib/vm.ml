@@ -12,6 +12,7 @@ type t = {
   stack_capacity : int;
   max_steps      : int;
   mem_size       : int;
+  buf_size    : int;
 }
 
 type control =
@@ -25,10 +26,10 @@ type exec_result = {
   remaining_code : instr list;  (* Instructions left to execute *)
 }
 
-let create ~stack_capacity ~max_steps ~mem_size =
-  { stack_capacity; max_steps; mem_size }
+let create ~stack_capacity ~max_steps ~mem_size ?(buf_size = 1) () =
+  { stack_capacity; max_steps; mem_size; buf_size; }
 
-let empty = { stack_capacity = 0; max_steps = 0; mem_size = 0 }
+let empty = { stack_capacity = 0; max_steps = 0; mem_size = 0; buf_size = 0 }
 
 (* ------------------------------------------------------------ *)
 (* Pure semantics for normal instructions                       *)
@@ -37,6 +38,7 @@ let empty = { stack_capacity = 0; max_steps = 0; mem_size = 0 }
 let eval_normal
     (instr : instr)
     (st : Stack.t)
+    ~(vm : t)
     ~(mem : int array)
     ~(meta_mem : int array)
 	~(payload_buf : int array)        
@@ -151,6 +153,17 @@ let eval_normal
         (String.concat "; "
            (Array.to_list mem |> List.map string_of_int));
       st
+  | LogPayload ->
+      Printf.printf "(Node %d) Payload: [%s]\n" 
+        meta_mem.(0) 
+        (String.concat "; " (Array.to_list payload_buf |> List.map string_of_int));
+      st
+
+  | LogOut ->
+      Printf.printf "(Node %d) OutBuf: [%s]\n" 
+        meta_mem.(0) 
+        (String.concat "; " (List.map string_of_int !out_buf));
+      st
 
   (* --- Accumulator A operations --- *)
   | PushA ->
@@ -202,17 +215,23 @@ let eval_normal
       emit out_port !out_buf;
       out_buf := [];
       st
-  | CopyPayloadToOut idx ->
+| CopyPayloadToOut idx ->
       let len = Array.length payload_buf in
       if idx < 0 || idx > len then
         failwith (Printf.sprintf "VM: CopyPayloadToOut index %d out of bounds (size=%d)" idx len)
       else
         let slice = Array.sub payload_buf idx (len - idx) |> Array.to_list in
-        out_buf := slice;
+		if List.length slice + List.length !out_buf > vm.buf_size then
+          failwith "VM: out_buf overflow"
+		else
+          out_buf := slice @ !out_buf;
         st
   | PopToOut ->
       let v, st' = pop st in
-      out_buf := v :: !out_buf;
+      if List.length !out_buf = vm.buf_size then
+        failwith "VM: out_buf overflow"
+      else
+        out_buf := v :: !out_buf;
       st'
 	
   | LoadPayload idx ->
@@ -238,6 +257,7 @@ let exec_instr
     (st : Stack.t)
     (instr : instr)
     (rest_code : instr list)  (* Remaining code after this instruction *)
+    ~(vm : t)
     ~(mem : int array)
     ~(meta_mem : int array)
 	~(payload_buf : int array)        
@@ -278,7 +298,7 @@ let exec_instr
   (* --- Normal instructions --- *)
   | _ ->
       let st' =
-        eval_normal instr st ~mem ~meta_mem ~payload_buf ~regA ~out_buf ~emit
+        eval_normal instr st ~vm ~mem ~meta_mem ~payload_buf ~regA ~out_buf ~emit
       in
       { st = st'; control = Continue; remaining_code = rest_code }
 
@@ -294,6 +314,9 @@ let exec_program
     (payload : Payload.t)
   : State.t * (int * Payload.t ) list * bool
   =
+  let payload_len = List.length payload in
+    if payload_len > vm.buf_size then
+      failwith "VM: payload exceeds vm.buf_size";
   let payload_buf = Array.of_list payload in
   (* Convert node state list -> RAM array, padding if needed *)
   let mem =
@@ -307,7 +330,6 @@ let exec_program
 
   (* Convert meta_info list -> meta_mem array *)
   let meta_mem = Array.of_list meta_info in
-  (* let payload_buf = Array.of_list payload in *)
   
   (* Register A starts with incoming payload *)
   let regA = ref (
@@ -339,7 +361,7 @@ let exec_program
           (st, false)
       | instr :: rest ->
           let result =
-            try exec_instr st instr rest ~mem ~meta_mem ~payload_buf ~regA ~out_buf ~emit with
+            try exec_instr st instr rest ~vm ~mem ~meta_mem ~payload_buf ~regA ~out_buf ~emit with
             | Failure msg -> raise (Emu_Vm_Exec_Error (steps, instr, msg))
             | exn -> raise (Emu_Vm_Exec_Error (steps, instr, Printexc.to_string exn))
           in

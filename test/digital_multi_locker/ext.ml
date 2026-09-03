@@ -14,7 +14,7 @@ type ext = {
 }
 
 let make_ext ~id : ext =
-  let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:0 in
+  let vm = Vm.create ~stack_capacity:30 ~max_steps:100 ~mem_size:0 () in
   let b = Builder.Node.create ~state:[] ~vm ~id () in
   
 

@@ -9,7 +9,7 @@ open Runtime
 module Demo = struct
  let pp_list lst =
   "[" ^ (String.concat "; " (List.map string_of_int lst)) ^ "]"
- let vm = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:2
+ let vm = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:2 ()
  let ceil = 21
 
  (* AddMod program *)

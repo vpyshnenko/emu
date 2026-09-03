@@ -19,7 +19,7 @@ let rec pairs = function
 
 let test_chess_clock _ctx =
   (* Shared VM for all nodes *)
-  let vm = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:1 in
+  let vm = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:1 () in
 
   (* ------------------------------------------------------------ *)
   (* Node: gen (tick source)                                     *)
@@ -108,7 +108,7 @@ let test_chess_clock _ctx =
   (* Node: observer                                               *)
   (* Keeps [a_count; b_count] and emits pair on every update      *)
   (* ------------------------------------------------------------ *)
-  let vm_obs = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:2 in
+  let vm_obs = Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size:2 () in
   let bObs = Builder.Node.create ~state:[5; 5] ~vm:vm_obs () in
   
   let handle i = [

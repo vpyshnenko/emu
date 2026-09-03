@@ -2,14 +2,14 @@
 exception Emu_Vm_Exec_Error of int * Instructions.instr * string
 
 
-let handle_delivery_error dst_id in_port sender_id payload exn =
+let handle_delivery_error dst_id in_port sender_id out_port payload exn =
   match exn with
 	 | Emu_Vm_Exec_Error (vm_step, instr, msg) -> 
-	     let ctx = Context.build ~node_id:dst_id ~in_port ~sender_id ~payload ~vm_step ~instr () in
+	     let ctx = Context.build ~node_id:dst_id ~in_port ~sender_id ~out_port ~payload ~vm_step ~instr () in
 		 Context.print ctx;
 		 failwith msg
 	 | Failure msg -> 
-	     let ctx = Context.build ~node_id:dst_id ~in_port ~sender_id ~payload () in
+	     let ctx = Context.build ~node_id:dst_id ~in_port ~sender_id ~out_port ~payload () in
 		 Context.print ctx;
 		 failwith msg
      (* Case 3: Unexpected system exceptions (e.g., Division_by_zero, Out_of_bounds) *)
@@ -18,6 +18,7 @@ let handle_delivery_error dst_id in_port sender_id payload exn =
            ~node_id:dst_id
            ~in_port
            ~sender_id
+		   ~out_port
            ~payload
            ()
          in

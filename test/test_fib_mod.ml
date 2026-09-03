@@ -3,7 +3,7 @@ open Emu
 open Emu.Instructions
 
 let make_vm ~mem_size () =
-  Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size
+  Vm.create ~stack_capacity:100 ~max_steps:100 ~mem_size ()
   
 
 

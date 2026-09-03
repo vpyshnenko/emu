@@ -15,7 +15,7 @@ let stp_init ~root_id net =
   stp_digest.final_snapshot
 
 	
-let test_send_linear _ctx =
+let test_send _ctx =
   (* let net = Net.make_ring_net 5 in *)
   (* let net = Net.make_linear_net 5 in *)
   let net = Net.cycle_net in
@@ -37,19 +37,51 @@ let test_send_linear _ctx =
           { src = Netbuilder.ext_id; out_port = src_id; payload = [dst_id; test_val] }
       ] in
       let received_vals = Digest.node_out_stream_on_port ~node_id:dst_id ~out_port:Layout.output.data digest in
-	  if List.mem test_val received_vals then
+	  if [src_id; test_val] = received_vals then
           Printf.printf "  \x1b[1;32m[PASS]\x1b[0m Node %d => Node %d | Value: %4d | Steps: %2d | Received_vals: %s\n"
             src_id dst_id test_val (Digest.total_steps digest) (pp_list received_vals)
         else 
           Printf.printf "  \x1b[1;31m[FAIL]\x1b[0m Node %d => Node %d | Value: %4d | Packet was LOST!\n"
             src_id dst_id test_val;
-	  assert_equal [test_val] received_vals
+	  assert_equal [src_id; test_val] received_vals
+    done
+  done
+  
+let test_ping _ctx =
+  (* let net = Net.make_ring_net 5 in *)
+  (* let net = Net.make_linear_net 5 in *)
+  let net = Net.cycle_net in
+  let snap = net
+    |> Netbuilder.attach_ext
+    |> stp_init ~root_id:2
+  in
+  let n = Emu.Net.size net in 
+  
+  (* 3. Matrix loop over all NodeA => NodeB combinations *)
+  for src_id = 0 to n - 1 do
+    for dst_id = 0 to n - 1 do
+      (* Generate a unique integer value for each test route *)
+	  
+      let digest = Runtime.run snap ~schedule:[
+          { src = Netbuilder.ext_ping_id; out_port = src_id; payload = [dst_id] }
+      ] in
+      let received_vals = Digest.node_out_stream_on_port ~node_id:src_id ~out_port:Layout.output.ping_ok digest in
+	  if [dst_id] = received_vals then
+	      (* green *)
+          Printf.printf "  \x1b[1;32m[PASS]\x1b[0m Node %d => Node %d | Steps: %2d | Received_vals: %s\n"
+            src_id dst_id (Digest.total_steps digest) (pp_list received_vals)
+        else 
+		 (* red *)
+          Printf.printf "  \x1b[1;31m[FAIL]\x1b[0m Node %d => Node %d | Packet was LOST!\n"
+            src_id dst_id;
+	  assert_equal [dst_id] received_vals
     done
   done
 
 let suite =
   "ping pong tests" >::: [
-    "test send linear" >:: test_send_linear;
+    "test send " >:: test_send;
+    "test ping" >:: test_ping;
   ]
 
 let () = run_test_tt_main suite

@@ -1,5 +1,5 @@
 (* gen_layout.ml *)
-let mem_fields = ["parent_id"; "seq_id"; "distance"]
+let mem_fields = ["parent_id"; "seq_id"; "distance"; "ping_session_id"]
 let output_fields = ["stp"; "root_tx"; "tx"; "data"; "ping"; "ping_ok"; "pong"]
 let input_fields = ["stp_init"; "stp"; "root_rx"; "send"; "rx"; "ping"; "pong"]
 

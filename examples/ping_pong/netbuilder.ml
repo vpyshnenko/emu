@@ -17,7 +17,7 @@ let create () = {
   connections = [];
 }
 
-let state = Layout.to_state {parent_id = (-1); distance = max_int; seq_id = 0;}
+let state = Layout.to_state {parent_id = (-1); distance = max_int; seq_id = 0; ping_session_id = 0;}
 let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state)
 
 let handlers = Handlers.handlers

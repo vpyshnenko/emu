@@ -228,9 +228,15 @@ let rx = [
    PING HANDLER
    Request echo from remote node.
    Incoming Payload: [TargetNodeId;]
-   Outgoing Payload: [TargetNodeId; PingServiceId; FromNodeId;]
+   Outgoing Payload: [TargetNodeId; PingServiceId; FromNodeId; PingSessionId]
    ========================================================================= *)
 let ping = [
+  Load mem.ping_session_id;
+  PushConst 1;
+  Add;
+  Store mem.ping_session_id;
+  PopToOut;
+  
   LoadMeta NodeId; PopToOut;
   PushConst 11; PopToOut;  (* PingServiceId = 11 *)
   LoadPayload 0; PopToOut;
@@ -240,25 +246,34 @@ let ping = [
 (* =========================================================================
    PONG HANDLER
    Respond to PING request from remote node.
-   Incoming Payload: [FromNodeId; ServiceId; InitiatorNodeId;]
-   Outgoing Payload: [InitiatorNodeId; PongServiceId; OurNodeId]
+   Incoming Payload: [FromNodeId; ServiceId; InitiatorNodeId; PingSessionId;]
+   Outgoing Payload: [InitiatorNodeId; PongServiceId; OurNodeId; PingSessionId;]
    ========================================================================= *)
 let pong = [
   LoadPayload 1;    (* Stack: [ ServiceId ] *)
-  Eq 11;
+  Eq 11; (* PingFeedbackServiceId = 11 *)
   BranchOf [|
     [
-	  LoadMeta NodeId; PopToOut; (* out_buf <- [OurNodeId *)
-	  PushConst 12; PopToOut;  (* out_buf <- [PongServiceId(12);OurNodeId *)
-	  LoadPayload 0; PopToOut; (* out_buf <- [InitiatorNodeId; PongServiceId(12);OurNodeId *)
+      LoadPayload 3; PopToOut; (* out_buf <- [PingSessionId] *)
+	  LoadMeta NodeId; PopToOut; (* out_buf <- [OurNodeId; PingSessionId] *)
+	  PushConst 12; PopToOut;  (* out_buf <- [PongServiceId(12); TargetNodeId; PingSessionId] *)
+	  LoadPayload 0; PopToOut; (* out_buf <- [InitiatorNodeId; PongServiceId(12); TargetNodeId; PingSessionId] *)
 	  SendTo output.pong;
 	]
   |];
-  Eq 12;
+  Eq 12; (* PingInitiatorService = 12  checks response from targeted nodes *)
   BranchOf [|
     [
-	  LoadPayload 2; PopToOut; (* out_buf <- [TargetNodeId *)
-	  SendTo output.ping_ok
+	  LoadPayload 3; (* Load Incoming PingSessionId *)
+	  Load mem.ping_session_id;
+	  Sub;
+	  Eq 0;
+	  BranchOf [|
+	    [
+	      LoadPayload 2; PopToOut; (* out_buf <- [TargetNodeId *)
+	      SendTo output.ping_ok
+		]
+	  |]
 	]
   |]
 ]

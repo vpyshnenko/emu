@@ -4,16 +4,18 @@ type mem = {
   parent_id : int;
   seq_id : int;
   distance : int;
+  ping_session_id : int;
 }
 
 let mem = {
   parent_id = 0;
   seq_id = 1;
   distance = 2;
+  ping_session_id = 3;
 }
 
 let to_state (mem_values : mem) : int list =
-  [ mem_values.parent_id; mem_values.seq_id; mem_values.distance ]
+  [ mem_values.parent_id; mem_values.seq_id; mem_values.distance; mem_values.ping_session_id ]
 
 type output = {
   stp : int;
@@ -87,4 +89,4 @@ let string_of_output_port = function
   | 6 -> "pong"
   | idx -> "port_" ^ string_of_int idx
 
-let mem_names = [ "parent_id"; "seq_id"; "distance" ]
+let mem_names = [ "parent_id"; "seq_id"; "distance"; "ping_session_id" ]

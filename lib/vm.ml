@@ -179,18 +179,33 @@ let eval_normal
       st
 
   (* --- Persistent memory (RAM) --- *)
-  | Load i ->
+  | LoadTo i ->
       if i < 0 || i >= Array.length mem then
         failwith "VM: Load index out of bounds"
       else
         push mem.(i) st
-
-  | Store i ->
+		
+  | Load ->
+      let i = peek st in
+      if i < 0 || i >= Array.length mem then
+        failwith "VM: Load index out of bounds"
+      else
+        push mem.(i) st
+		
+  | StoreTo i ->
       if i < 0 || i >= Array.length mem then
         failwith "VM: Store index out of bounds"
       else
         let v = peek st in
         mem.(i) <- v;
+        st
+
+  | Store ->
+      let i = peek st in
+      if i < 0 || i >= Array.length mem then
+        failwith "VM: Store index out of bounds"
+      else
+        mem.(i) <- !regA;
         st
 
   (* --- Metadata memory (meta_mem) --- *)

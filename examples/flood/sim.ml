@@ -9,7 +9,7 @@ let init_snap = Snapshot.make ~net ~max_queue_length:10000 ()
 
 let send idA idB =
    let dst = Runtime.run init_snap ~schedule:[
-    { src = idA; out_port = Layout.output.tx; payload = [idB; 42] };
+    { src = idA; out_port = Layout.output.tx; payload = [idB; 0] };
    ] in 
    Printf.printf "Total steps: %d\n" (Digest.total_steps dst);
    Digest.print_all_states dst;

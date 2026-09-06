@@ -35,8 +35,10 @@ type instr =
   | PopA
   | PeekA
   
-  | Load of int
-  | Store of int
+  | LoadTo of int
+  | Load
+  | StoreTo of int
+  | Store
   | LoadMeta of Meta.index
   
 
@@ -85,8 +87,10 @@ let string_of_instr = function
   | PushA -> "PushA"
   | PopA -> "PopA"
   | PeekA -> "PeekA"
-  | Load i -> Printf.sprintf "Load %d" i
-  | Store i -> Printf.sprintf "Store %d" i
+  | LoadTo i -> Printf.sprintf "LoadTo %d" i
+  | Load -> "Load"
+  | StoreTo i -> Printf.sprintf "StoreTo %d" i
+  | Store -> "Store"
   | LoadMeta _ -> "LoadMeta"
   | Emit -> "Emit"
   | EmitTo i -> Printf.sprintf "EmitTo %d" i

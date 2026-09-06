@@ -34,48 +34,48 @@ let make_ports ~n =
 
 let make_setup_handler ~count =
   [
-    Load 0; Eq (-1); BranchOf [|
-      [ PushA; PushConst (-1); Add; Store 0; Halt ];
+    LoadTo 0; Eq (-1); BranchOf [|
+      [ PushA; PushConst (-1); Add; StoreTo 0; Halt ];
     |];
-    Load 1; Eq (-1); BranchOf [|
+    LoadTo 1; Eq (-1); BranchOf [|
       [ 
-        PushA; Store 1;
-        Load 0; Gt 1; BranchOf [|
-          [ PopA; Load 1; Emit ];
+        PushA; StoreTo 1;
+        LoadTo 0; Gt 1; BranchOf [|
+          [ PopA; LoadTo 1; Emit ];
         |]		 
       ];
-      [ Load 1; Emit; 
-        Load 0; PushConst (-1); Add; Store 0;
+      [ LoadTo 1; Emit; 
+        LoadTo 0; PushConst (-1); Add; StoreTo 0;
       ]
     |];
-    Load 0; Eq 0; BranchOf [|
+    LoadTo 0; Eq 0; BranchOf [|
       [ 
-        PushConst count; Store 0;
-        PushConst (-1); Store 1;
+        PushConst count; StoreTo 0;
+        PushConst (-1); StoreTo 1;
       ]
     |]
   ] 
   
 let make_auth_handler ~count =
   [
-    Load 0; Eq (-1); BranchOf [|
-      [ PushA; PushConst (-1); Add; Store 0; Halt ];
+    LoadTo 0; Eq (-1); BranchOf [|
+      [ PushA; PushConst (-1); Add; StoreTo 0; Halt ];
     |];
-    Load 1; Eq (-1); BranchOf [|
+    LoadTo 1; Eq (-1); BranchOf [|
       [ 
         LoadMeta OutPortCount; PushConst 1; Shr; (* 2N >> 1 = N *)
-        PushA; Add; Store 1;
-        Load 0; PopA; Load 1; Emit;
+        PushA; Add; StoreTo 1;
+        LoadTo 0; PopA; LoadTo 1; Emit;
       ];
       [ 
-        Load 1; Emit;
-        Load 0; PushConst (-1); Add; Store 0;
+        LoadTo 1; Emit;
+        LoadTo 0; PushConst (-1); Add; StoreTo 0;
       ]
     |];
-    Load 0; Eq 1; BranchOf [|
+    LoadTo 0; Eq 1; BranchOf [|
       [ 
-        PushConst count; Store 0;
-        PushConst (-1); Store 1;
+        PushConst count; StoreTo 0;
+        PushConst (-1); StoreTo 1;
       ]
     |]
   ]

@@ -9,12 +9,12 @@ open Layout
 let stp_init = [
   (* 1. Set Parent / Leader ID to -1 (indicates "I am the Spanning Tree Root") *)
   PushConst (-1);         (* Stack: [ -1 ] *)
-  Store mem.parent_id;    (* RAM[leader_id] <- -1. (Store keeps top of stack) *)
+  StoreTo mem.parent_id;    (* RAM[leader_id] <- -1. (Store keeps top of stack) *)
   Pop;                    (* Stack: [] (Clean up the stack) *)
 
   (* 2. Set root distance to itself as 0 *)
   PushConst 0;            (* Stack: [ 0 ] *)
-  Store mem.distance;     (* RAM[distance] <- 0 *)
+  StoreTo mem.distance;     (* RAM[distance] <- 0 *)
   PopToOut;
   (* 3. Broadcast our Root advertisement to all physical neighbors *)
   SendTo output.stp;      (* broadcasts [Distance] *)
@@ -33,7 +33,7 @@ let stp = [
   PeekA;  (* temp store proposed distance *)
 
   (* 2. Compare proposed_distance with current stored distance *)
-  Load mem.distance;      (* Stack: [ current_dist; proposed_dist; proposed_dist ] *)
+  LoadTo mem.distance;      (* Stack: [ current_dist; proposed_dist; proposed_dist ] *)
   Sub;                    (* Stack: [ (current_dist - proposed_dist); proposed_dist ] *)
   LtPop 0;                
                            
@@ -42,10 +42,10 @@ let stp = [
     (* Branch 0 (True: Proposed distance is shorter -> UPDATE STATE) *)
     [
       LoadMeta SenderNodeId;      (* Stack: [ new_parent_id; proposed_dist ] *)
-      Store mem.parent_id;(* RAM[leader_id] <- incoming_leader_id *)
+      StoreTo mem.parent_id;(* RAM[leader_id] <- incoming_leader_id *)
 	  
       PushA;    (* restore proposed distance from RegA *)
-      Store mem.distance; (* RAM[distance] <- proposed_dist *)
+      StoreTo mem.distance; (* RAM[distance] <- proposed_dist *)
 	  PopToOut;
 
       (* Broadcast updated shortest-path advertisement to neighbors *)
@@ -82,17 +82,17 @@ let send = [
   LoadPayload 0; PopToOut;      (* out_buf <- [DestNodeId; FromNodeId; Val] *) 
   
   (* --- OPTIMIZATION B: ROOT DIRECT-FLOOD --- *)
-  Load mem.parent_id;      
+  LoadTo mem.parent_id;      
   EqPop (-1);
   
   BranchOf [|
     (* Branch 0 (True: Sender is the Root -> Bypasses convergecast, initiate flood) *)
     [
       (* Increment and store our local Sequence ID *)
-      Load mem.seq_id;    (* Stack: [ current_seq_id; ] *)
+      LoadTo mem.seq_id;    (* Stack: [ current_seq_id; ] *)
       PushConst 1;        (* Stack: [ 1; current_seq_id; ... ] *)
       Add;                (* Stack: [ new_seq_id; ... ] *)
-      Store mem.seq_id;   (* RAM[seq_id] <- new_seq_id (keeps new_seq_id on stack top) *)
+      StoreTo mem.seq_id;   (* RAM[seq_id] <- new_seq_id (keeps new_seq_id on stack top) *)
 	  PopToOut;           (* out_buf <- [SeqId; DestNodeId; FromNodeId; Val *)
       
       (* Broadcast flood packet: [SeqId; DestNodeId; FromNodeId; Val] *)
@@ -102,7 +102,7 @@ let send = [
   |];
 
   (* --- PHASE 2: CONVERGECAST UPWARDS TO ROOT --- *)
-  Load mem.parent_id;     
+  LoadTo mem.parent_id;     
   PopToOut;                (* out_buf <- [ParentId; DestNodeId; FromNodeId; Val] *)
   
   (* Ship the packet up the tree *)
@@ -118,7 +118,7 @@ let send = [
    ========================================================================= *)
 let root_rx = [
   (* 1. Verify if we are the Root node target *)
-  Load mem.parent_id;        
+  LoadTo mem.parent_id;        
   NonEqPop (-1);
   
   BranchOf [|
@@ -134,7 +134,7 @@ let root_rx = [
       
       (* Repack and forward the convergecast packet *)
 	  CopyPayloadToOut 1; (* out_buf <- [DestNodeId; FromNodeId; Val] *)
-      Load mem.parent_id;       
+      LoadTo mem.parent_id;       
 	  PopToOut;           (* out_buf <- [NextParentId; DestNodeId; FromNodeId; Val]  ] *)
       
       SendTo output.root_tx; (* Forward upstream *)
@@ -164,10 +164,10 @@ let root_rx = [
 		  CopyPayloadToOut 1; (* out_buf <- [DestNodeId; FromNodeId; Val] *)
           
           (* Increment local sequence number and store *)
-          Load mem.seq_id;(* Stack: [ current_seq_id; ] *)
+          LoadTo mem.seq_id;(* Stack: [ current_seq_id; ] *)
           PushConst 1;    (* Stack: [ 1; current_seq_id; ... ] *)
           Add;            (* Stack: [ new_seq_id; ... ] *)
-          Store mem.seq_id;(* RAM[seq_id] <- new_seq_id (keeps new_seq_id on stack top) *)
+          StoreTo mem.seq_id;(* RAM[seq_id] <- new_seq_id (keeps new_seq_id on stack top) *)
 		  PopToOut;
           
           (* Broadcast flood packet: [SeqId; DestNodeId; FromNodeId; Val] *)
@@ -187,7 +187,7 @@ let root_rx = [
 let rx = [
   (* --- A. SEQUENCE NUMBER DEDUPLICATION --- *)
   LoadPayload 0;          (* Push Incoming SeqId onto stack *)
-  Load mem.seq_id;        (* Stack: [ cached_seq_id; incoming_seq_id ] *)
+  LoadTo mem.seq_id;        (* Stack: [ cached_seq_id; incoming_seq_id ] *)
   Sub;                    (* Stack: [ cached_seq_id - incoming_seq_id ] *)
   GtPop 0;                (* Pops. If (cached - incoming) > 0 (Old/Duplicate), pushes 1, else 0 (New) *)
   
@@ -195,7 +195,7 @@ let rx = [
     (* Branch 0: (True: New message) -> Update local sequence cache and proceed *)
     [
       LoadPayload 0;              (* Push incoming SeqId *)
-      Store mem.seq_id;   (* RAM[seq_id] <- incoming SeqId *)
+      StoreTo mem.seq_id;   (* RAM[seq_id] <- incoming SeqId *)
       Pop;                (* Clean up residual stack value *)
     ];
     (* Branch 1: (False: Old/Duplicate message) -> Drop packet instantly *)
@@ -230,10 +230,10 @@ let rx = [
    Outgoing Payload: [TargetNodeId; PingServiceId; FromNodeId; PingSessionId]
    ========================================================================= *)
 let ping = [
-  Load mem.ping_session_id;
+  LoadTo mem.ping_session_id;
   PushConst 1;
   Add;
-  Store mem.ping_session_id;
+  StoreTo mem.ping_session_id;
   PopToOut;
   
   LoadMeta NodeId; PopToOut;
@@ -264,7 +264,7 @@ let pong = [
   BranchOf [|
     [
 	  LoadPayload 3; (* Load Incoming PingSessionId *)
-	  Load mem.ping_session_id;
+	  LoadTo mem.ping_session_id;
 	  Sub;
 	  Eq 0;
 	  BranchOf [|

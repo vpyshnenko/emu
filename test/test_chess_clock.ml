@@ -46,7 +46,7 @@ let test_chess_clock _ctx =
   (* Incoming ports: 1 = tick, 2 = switch pulse *)
   let inTick =
     bRouter.add_handler [
-      Load 0;          (* load active port *)
+      LoadTo 0;          (* load active port *)
       Emit;        
     ]
   in
@@ -54,11 +54,11 @@ let test_chess_clock _ctx =
   let inPulse =
     bRouter.add_handler [
       LoadMeta OutPortCount; (* push ceil *)
-	  Load 0; (* push current active out port index *)
+	  LoadTo 0; (* push current active out port index *)
       PushConst 1;
       AddMod;
 	  Pop; (* pop overflow *)
-      Store 0;
+      StoreTo 0;
     ]
   in
 
@@ -73,10 +73,10 @@ let test_chess_clock _ctx =
 
   let inA =
     bA.add_handler [
-      Load 0;
+      LoadTo 0;
       PushConst (-1);
       Add;
-      Store 0;
+      StoreTo 0;
       PeekA;
       EmitTo 0;
     ]
@@ -92,10 +92,10 @@ let test_chess_clock _ctx =
 
   let inB =
     bB.add_handler [
-      Load 0;
+      LoadTo 0;
       PushConst (-1);
       Add;
-      Store 0;
+      StoreTo 0;
       PeekA;
       EmitTo 0;
     ]
@@ -112,9 +112,9 @@ let test_chess_clock _ctx =
   let bObs = Builder.Node.create ~state:[5; 5] ~vm:vm_obs () in
   
   let handle i = [
-      PushA; Store i;          (* update node's state *)
-      Load 0; PeekA; EmitTo 0; (* emit A *)
-      Load 1; PeekA; EmitTo 0; (* emit B *)
+      PushA; StoreTo i;          (* update node's state *)
+      LoadTo 0; PeekA; EmitTo 0; (* emit A *)
+      LoadTo 1; PeekA; EmitTo 0; (* emit B *)
   ] in
   
   let inA_obs =  bObs.add_handler (handle 0) in

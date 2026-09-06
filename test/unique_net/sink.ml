@@ -38,8 +38,8 @@ let out_ports = [0; 1; 2]
 
 let data_handler = [
   EmitTo output.out;
-  Load mem.count;
-  PushConst 1; Sub; Store mem.count;
+  LoadTo mem.count;
+  PushConst 1; Sub; StoreTo mem.count;
   Eq 0;
   BranchOf [|
 	[ PushConst 1; PopA; EmitTo output.saturated ]
@@ -50,7 +50,7 @@ let data_handler = [
 let overflow_handler = [ EmitTo output.overflow ]
 
 let reset_handler size = [
-  PushConst size; Store mem.count;
+  PushConst size; StoreTo mem.count;
 ]
 
 let handlers = IntMap.empty

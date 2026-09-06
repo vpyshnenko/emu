@@ -63,31 +63,31 @@ let state = { flag = (-1); value = (-1); count = (-1) }
 let initial_state = [state.flag; state.value; state.count]
 
 let data_handler = [
-  Load 0; Eq (-1); (* check noninit flag *)
+  LoadTo 0; Eq (-1); (* check noninit flag *)
   BranchOf [|
     [ 
-	  PushConst 0; Store 0; (* set init flag as leaf *)
-	  PushA; Store 1;  (* store value *)
-	  (* PushConst 1; Store 2;  (* init counter *) *)
-	  PushConst 0; Store 2;  (* init counter *)
+	  PushConst 0; StoreTo 0; (* set init flag as leaf *)
+	  PushA; StoreTo 1;  (* store value *)
+	  (* PushConst 1; StoreTo 2;  (* init counter *) *)
+	  PushConst 0; StoreTo 2;  (* init counter *)
 	  Halt;
 	]
   |];
-  Load 1; PushA; Sub;  Eq 0; (* compare with cur value *)
+  LoadTo 1; PushA; Sub;  Eq 0; (* compare with cur value *)
   BranchOf [|
-   [ Load 2; PushConst 1; Add; Store 2; Halt ];(* if the same then inc counter *)
+   [ LoadTo 2; PushConst 1; Add; StoreTo 2; Halt ];(* if the same then inc counter *)
    [
      Gt 0; BranchOf [|
 	  [ EmitTo output.data_lt];  (* forward to "less than" child *)
 	  [ EmitTo output.data_gt]; (* forward to "greater than" child *)
 	 |];
-	 PushConst 1; Store 0; (* set non-leaf flag *)
+	 PushConst 1; StoreTo 0; (* set non-leaf flag *)
    ]
  |]
 ]
 
 let flush_handler = [
-  Load 0;
+  LoadTo 0;
   
   Eq (-1); (* check is non-init *)
   BranchOf [|
@@ -97,8 +97,8 @@ let flush_handler = [
   Eq 0; (* check is leaf *)
   BranchOf [|
     [
-	  Load 1; PopA; (* load cur value in regA *)
-	  Load 2; (* load counter *)
+	  LoadTo 1; PopA; (* load cur value in regA *)
+	  LoadTo 2; (* load counter *)
 	  Eq 0;
 	  Loop [
 	    EmitTo output.out;
@@ -113,8 +113,8 @@ let flush_handler = [
   EmitTo output.flush_lt (* non-leaf initiates flush for children*)
 ]
 let flush_lt_complete_handler = [
-  Load 1; PopA;
-  Load 2; Eq 0;
+  LoadTo 1; PopA;
+  LoadTo 2; Eq 0;
   Loop [
     EmitTo output.out;
     PushConst 1; Sub; 
@@ -129,7 +129,7 @@ let flush_gt_complete_handler = [
 
 let reset_handler = [
   PushConst (-1);
-  Store 0; Store 1; Store 2;
+  StoreTo 0; StoreTo 1; StoreTo 2;
   EmitTo output.reset
 ]
 

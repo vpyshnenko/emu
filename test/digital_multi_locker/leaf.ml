@@ -33,27 +33,27 @@ let output = { value = 0; auth_fail = 1; setup_ok = 2 }
 
 let setup_handler = [
     PushConst 1;        (* Push not_empty flag *)
-    Store 0;            (* Store in state[0] - now has value *)
+    StoreTo 0;            (* Store in state[0] - now has value *)
 	PushA;
-	Store 1;            (* Store secret value in state[1] *)
+	StoreTo 1;            (* Store secret value in state[1] *)
     PushConst 1;               
 	PopA;               (* move 1 to regA *)
     EmitTo 2;           (* Emit to port 2 (setup_ok) *)
   ]
   
 let auth_handler = [
-    Load 0;             (* Check if we have token (state[0]) *)
+    LoadTo 0;             (* Check if we have token (state[0]) *)
     Eq 1;               (* Compare with 1 *)
     BranchOf [|
-      [ Load 1; PopA; EmitTo 0; ];     (* auth success → emit value to (port 0) *)
+      [ LoadTo 1; PopA; EmitTo 0; ];     (* auth success → emit value to (port 0) *)
       [ PushConst 1; PopA; EmitTo 1 ];     (* auth fail → emit 1 to (port 1) *)
     |];
   ]
   
 let reset_handler = [
     PushConst 0;        
-    Store 0;            (* state[0;0] *)
-	Store 1;
+    StoreTo 0;            (* state[0;0] *)
+	StoreTo 1;
   ]
   
 

@@ -10,10 +10,10 @@ open Layout
    ========================================================================= *)
 let rx = [
   (* --- A. Update count of received messages --- *)
-  Load mem.count;
+  LoadTo mem.count;
   PushConst 1;
   Add;
-  Store mem.count;
+  StoreTo mem.count;
   Pop;
   (* --- B. DESTINATION CHECK ---
      Is DestNodeId (payload index 1) equal to our own NodeId? [3] *)

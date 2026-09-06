@@ -23,26 +23,26 @@ let test_digital_vault _ctx =
     let inSetupToken =
       bRouter.add_handler [
           PushConst 1;
-          Store 0;
+          StoreTo 0;
       ]
     in
     
     let inAuthToken =
       bRouter.add_handler [
           PushConst 1;
-          Store 1;
+          StoreTo 1;
       ]
     in
     *)
     let inSetupDigit =
       bRouter.add_handler [
-        Load 0;              
+        LoadTo 0;              
 		Eq 1;               (* has_setup_token *)
         BranchOf [|
           [
             PushA;           (* push digit *)
             Emit;            (* emit to port digit *)
-            PushConst 0; Store 0;   (* clear token *)
+            PushConst 0; StoreTo 0;   (* clear token *)
           ];
         |];
     ]
@@ -51,7 +51,7 @@ let test_digital_vault _ctx =
     
     let inAuthDigit =
       bRouter.add_handler [
-	    Load 1;
+	    LoadTo 1;
 		Eq 1;
 		BranchOf [|
           [
@@ -59,7 +59,7 @@ let test_digital_vault _ctx =
             PushConst 2;
             Add;
             Emit;
-            PushConst 0; Store 1;   (* clear token *)
+            PushConst 0; StoreTo 1;   (* clear token *)
           ];
         |];
    
@@ -70,7 +70,7 @@ let test_digital_vault _ctx =
     let inResetSetup =
       bRouter.add_handler [
         PushConst 0;
- 	    Store 0;
+ 	    StoreTo 0;
       ]
     in
 	
@@ -78,7 +78,7 @@ let test_digital_vault _ctx =
       bRouter.add_handler [
         (* PushConst 0; *)
         PushConst 1;
- 	    Store 1;
+ 	    StoreTo 1;
       ]
     in
     
@@ -101,7 +101,7 @@ let test_digital_vault _ctx =
     let inSetupToken =
       bLeaf.add_handler [
           PushConst 1;
-          Store 0;
+          StoreTo 0;
 		  PopA;
 		  EmitTo 2;
       ]
@@ -111,7 +111,7 @@ let test_digital_vault _ctx =
       bLeaf.add_handler [
 	      PushConst 1;
 		  PopA;
-	      Load 0;
+	      LoadTo 0;
 		  Eq 1;
 		  BranchOf [|
 		    [ EmitTo 0];
@@ -123,7 +123,7 @@ let test_digital_vault _ctx =
 	let inResetSetup =
       bLeaf.add_handler [
 	      PushConst 0;
-		  Store 0;
+		  StoreTo 0;
       ]
     in
 	
@@ -146,13 +146,13 @@ let test_digital_vault _ctx =
   let inPayload =
      bPayload.add_handler [
       PushA;
-	  Store 0;
+	  StoreTo 0;
      ]
   in
   
   let inUnlock =
      bPayload.add_handler [
-	  Load 0;
+	  LoadTo 0;
       PopA;
 	  EmitTo 0;
      ]
@@ -161,7 +161,7 @@ let test_digital_vault _ctx =
   let inClear =
      bPayload.add_handler [
 	  PushConst 0;
-	  Store 0;
+	  StoreTo 0;
      ]
   in
   

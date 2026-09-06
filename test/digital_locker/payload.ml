@@ -28,18 +28,18 @@ let make_payload () : payload =
   (* INPUT PORTS - in declaration order *)
   let set = b.add_handler [
     PushA;           (* Push payload value from register A *)
-    Store 0;         (* Store in state[0] *)
+    StoreTo 0;         (* Store in state[0] *)
   ] in
   
   let unlock = b.add_handler [
-    Load 0;          (* Load stored payload value *)
+    LoadTo 0;          (* Load stored payload value *)
     PopA;            (* Move to register A *)
     EmitTo 0;        (* Emit to port 0 (value output) *)
   ] in
   
   let clear = b.add_handler [
     PushConst 0;     (* Push 0 *)
-    Store 0;         (* Clear state[0] *)
+    StoreTo 0;         (* Clear state[0] *)
   ] in
   
   (* OUTPUT PORTS - in declaration order *)

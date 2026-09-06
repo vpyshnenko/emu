@@ -30,7 +30,7 @@ let make_leaf () : leaf =
   (* INPUT PORTS - in declaration order *)
   let setup = b.add_handler [
     PushConst 1;        (* Push token flag *)
-    Store 0;            (* Store in state[0] - now has token *)
+    StoreTo 0;            (* Store in state[0] - now has token *)
     PopA;               (* move 1 to regA *)
     EmitTo 2;           (* Emit to port 2 (setup_ok) *)
   ] in
@@ -38,7 +38,7 @@ let make_leaf () : leaf =
   let auth = b.add_handler [
     PushConst 1;        
     PopA;               (* Move 1 to reg A *)
-    Load 0;             (* Check if we have token (state[0]) *)
+    LoadTo 0;             (* Check if we have token (state[0]) *)
     Eq 1;               (* Compare with 1 *)
     BranchOf [|
       [ EmitTo 0 ];     (* Token present → auth success (port 0) *)
@@ -48,7 +48,7 @@ let make_leaf () : leaf =
   
   let reset = b.add_handler [
     PushConst 0;        (* Push 0 to clear token *)
-    Store 0;            (* state[0] = 0 - clear token *)
+    StoreTo 0;            (* state[0] = 0 - clear token *)
   ] in
   
   (* OUTPUT PORTS - in declaration order *)

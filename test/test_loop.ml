@@ -30,7 +30,7 @@ let test_loop _ctx =
   
   let countdownOut = bA.add_out_port () in
   let countdownIn = bA.add_handler [
-    Load 0; Eq 0;
+    LoadTo 0; Eq 0;
     Loop [
 	  PeekA;
       EmitTo countdownOut;
@@ -44,7 +44,7 @@ let test_loop _ctx =
     PushConst 0;
 	PushConst 1;  (* Non-zero to force loop entry *)
     Loop [
-	  Dup; Load 1; Add; Store 1; 
+	  Dup; LoadTo 1; Add; StoreTo 1; 
 	  PopA; EmitTo sumOut;
       PushConst 1; Add;
 	  

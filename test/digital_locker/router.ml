@@ -31,36 +31,36 @@ let _make_router ~n ~is_root () : router =
   
   let setup_token = b.add_handler [
     PushConst 1;
-	Store 0;
+	StoreTo 0;
   ] in
   
   let auth_token = b.add_handler [
     PushConst 1;
-	Store 1;
+	StoreTo 1;
   ] in
   
   let setup_data = b.add_handler [
-    Load 0; Eq 1; BranchOf [|
-      [ PushA; Emit; PushConst 0; Store 0 ];
+    LoadTo 0; Eq 1; BranchOf [|
+      [ PushA; Emit; PushConst 0; StoreTo 0 ];
     |];
   ] in
   
   let auth_data = b.add_handler [
-    Load 1; Eq 1; BranchOf [|
+    LoadTo 1; Eq 1; BranchOf [|
       [ 
 	    PushA;
 		LoadMeta OutPortCount; PushConst 1; Shr;  (* 2N >> 1 = N *)
-		Add; Emit; PushConst 0; Store 1 
+		Add; Emit; PushConst 0; StoreTo 1 
 	  ];
     |];
   ] in
   
   let setup_reset = b.add_handler (
-    if is_root then [ PushConst 1; Store 0 ] else [ PushConst 0; Store 0 ]
+    if is_root then [ PushConst 1; StoreTo 0 ] else [ PushConst 0; StoreTo 0 ]
   ) in
   
   let auth_reset = b.add_handler (
-    if is_root then [ PushConst 1; Store 1 ] else [ PushConst 0; Store 1 ]
+    if is_root then [ PushConst 1; StoreTo 1 ] else [ PushConst 0; StoreTo 1 ]
   ) in
   
   (* OUTPUT PORTS - in declaration order *)

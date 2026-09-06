@@ -25,8 +25,8 @@ let test_fibonacci_mod_network _ctx =
      - symbolic index 0 otherwise
   *)
  let addmod_prog = [
-    Load 1; (* put ceil on the bottom *)
-	Load 0; (* put 0 as initial value for counter *)
+    LoadTo 1; (* put ceil on the bottom *)
+	LoadTo 0; (* put 0 as initial value for counter *)
 	PushA; (* push incoming value *)
     AddMod;
 	Eq 1;
@@ -36,12 +36,12 @@ let test_fibonacci_mod_network _ctx =
     Pop;    (* remove overflow val  from stack *)
     PeekA; (* copy sum to reg A *)
     EmitTo 0;          (* default symbolic index *)
-    Store 0; (* store sum to mem[0] *)
+    StoreTo 0; (* store sum to mem[0] *)
   ] in
   
   (* forward_prog: takes symbolic index for ch_out *)
   let forward_prog ch_out = [
-	  Load 0; (* copy counter val *)
+	  LoadTo 0; (* copy counter val *)
 	  Eq 0;
 	  BranchOf [|
 	    [ Shutdown; ] (* power off if counter = 0 *)
@@ -50,7 +50,7 @@ let test_fibonacci_mod_network _ctx =
       EmitTo ch_out;   (* symbolic index for ch_out *)
       PushConst (-1);
 	  Add;
-	  Store 0;
+	  StoreTo 0;
     ] in
 
   (* ------------------------------------------------------------ *)

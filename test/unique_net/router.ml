@@ -55,16 +55,16 @@ let state = { flag = (-1); value = (-1) }
 let initial_state = [state.flag; state.value]
 
 let data_handler = [
-  Load mem.flag; Eq (-1); (* check noninit flag *)
+  LoadTo mem.flag; Eq (-1); (* check noninit flag *)
   BranchOf [|
     [ 
-	  PushConst 0; Store mem.flag; (* set init flag as leaf *)
-	  PushA; Store mem.value;  (* store value *)
+	  PushConst 0; StoreTo mem.flag; (* set init flag as leaf *)
+	  PushA; StoreTo mem.value;  (* store value *)
 	  EmitTo output.out;
 	  Halt
 	]
   |];
-  Load mem.value; PushA; Sub;  Eq 0; (* compare with cur value *)
+  LoadTo mem.value; PushA; Sub;  Eq 0; (* compare with cur value *)
   BranchOf [|
    [ Halt ];(* if the same as basic value then do nothing *)
    [
@@ -79,7 +79,7 @@ let data_handler = [
 
 let reset_handler = [
   PushConst (-1);
-  Store mem.flag; Store mem.value;
+  StoreTo mem.flag; StoreTo mem.value;
   EmitTo output.reset
 ]
 

@@ -17,7 +17,8 @@ let create () = {
   connections = [];
 }
 
-let state = Layout.to_state {count = 0;}
+(* let state = Layout.to_state {count = 0;} *)
+let state = List.init 21 (fun _ -> 0) 
 let vm = Emu.Vm.create ~stack_capacity:16 ~max_steps:200 ~mem_size:(List.length state) ~buf_size:2 ()
 
 let handlers = Handlers.handlers

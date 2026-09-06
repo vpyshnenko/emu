@@ -16,6 +16,8 @@ type instr =
   | LogMem
   | LogPayload
   | LogOut
+  | LogRegA
+  
   
   | Eq of int  (* Compare top of stack with constant X *)
   | NonEq of int (* Compare top of stack for inequality with constant X (peek) *)
@@ -72,6 +74,7 @@ let string_of_instr = function
   | LogMem -> "LogMem"
   | LogPayload -> "LogPayload"
   | LogOut -> "LogOut"
+  | LogRegA -> "LogRegA"
   | Eq x -> Printf.sprintf "Eq %d" x
   | NonEq x -> Printf.sprintf "NonEq %d" x
   | Gt x -> Printf.sprintf "Gt %d" x

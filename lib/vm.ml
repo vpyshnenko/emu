@@ -164,6 +164,11 @@ let eval_normal
         meta_mem.(0) 
         (String.concat "; " (List.map string_of_int !out_buf));
       st
+  | LogRegA ->
+      Printf.printf "(Node %d) RegA: %d\n"
+        meta_mem.(0) 
+        !regA;
+      st      
 
   (* --- Accumulator A operations --- *)
   | PushA ->

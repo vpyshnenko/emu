@@ -84,6 +84,7 @@ let handle_event node ~port ~payload ~src_id =
         ~in_port_count:(IntMap.cardinal node.handlers)
         ~cur_in_port:port
 		~sender_node_id:src_id
+		~mem_len:node.vm.mem_size
     in
 
     let new_state, outs, halted =
